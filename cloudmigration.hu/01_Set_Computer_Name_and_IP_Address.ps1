@@ -1,4 +1,3 @@
-
 # start with this in case you get error in new Windows install: Set-ExecutionPolicy Bypass -Scope Process -Force
 
 param (
@@ -7,36 +6,34 @@ param (
 
 # Validate Input
 if (-not $ServerName) {
-    Write-Host "ERROR: Please specify a server name. Usage: .\01_Set_Computer_Name_and_IP_Address.ps1 -ServerName DC01" -ForegroundColor Red
+    Write-Host "ERROR: Please specify a server name. Usage: .\01_Set_Computer_Name_and_IP_Address.ps1 -ServerName DC01"
     exit
 }
 
 # Load Configuration File
-$configFile = ".\00_Server_Config.json"
+$configFile = "$PSScriptRoot\00_Server_Config.json"
 
 if (-not (Test-Path $configFile)) {
-    Write-Host "ERROR: Configuration file not found: $configFile" -ForegroundColor Red
+    Write-Host "ERROR: Configuration file not found: $configFile"
     exit
 }
 
-# Parse JSON Configuration
-$configData = Get-Content $configFile | ConvertFrom-Json
+# Read JSON File (Compatible with PowerShell 5.1)
+$configRaw = Get-Content -Path $configFile -Raw
+$configData = $configRaw | ConvertFrom-Json
 
 # Validate Server Configuration
-if (-not $configData.$ServerName) {
-    Write-Host "ERROR: Server '$ServerName' not found in configuration file." -ForegroundColor Red
+if (-not $configData.PSObject.Properties[$ServerName]) {
+    Write-Host "ERROR: Server '$ServerName' not found in configuration file."
     exit
 }
 
 # Extract Settings
 $ServerConfig = $configData.$ServerName
-
 $NewComputerName = $ServerConfig.ComputerName
-
 $IPAddress = $ServerConfig.IPAddress
 $SubnetMask = $ServerConfig.SubnetMask
 $Gateway = $ServerConfig.Gateway
-
 $PrimaryDNS = $ServerConfig.PrimaryDNS
 $SecondaryDNS = $ServerConfig.SecondaryDNS
 
@@ -45,7 +42,7 @@ $NetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" }
 
 # Ensure the network adapter is found
 if (-not $NetAdapter) {
-    Write-Host "No active network adapter found. Please check your connection." -ForegroundColor Red
+    Write-Host "ERROR: No active network adapter found. Please check your connection."
     exit
 }
 
@@ -53,29 +50,30 @@ if (-not $NetAdapter) {
 Write-Host "Renaming computer to $NewComputerName..."
 Rename-Computer -NewName $NewComputerName -Force
 
-# Configure Static IP Address
+# Configure Static IP Address (Compatible with PowerShell 5.1)
 Write-Host "Configuring static IP address..."
-New-NetIPAddress -InterfaceIndex $NetAdapter.ifIndex -IPAddress $IPAddress -PrefixLength 24 -DefaultGateway $Gateway -Confirm:$false
+$InterfaceName = $NetAdapter.Name
+& netsh interface ipv4 set address name="$InterfaceName" static $IPAddress $SubnetMask $Gateway
 
-# Set DNS Servers
+# Set DNS Servers (Compatible with PowerShell 5.1)
 Write-Host "Setting DNS servers..."
-Set-DnsClientServerAddress -InterfaceIndex $NetAdapter.ifIndex -ServerAddresses ($PrimaryDNS, $SecondaryDNS)
+& netsh interface ipv4 set dnsservers name="$InterfaceName" source=static address=$PrimaryDNS validate=no
+& netsh interface ipv4 add dnsservers name="$InterfaceName" address=$SecondaryDNS index=2
 
 # Output Summary of Changes
 Write-Host "`nConfiguration Summary for $NewComputerName"
-$Summary = [PSCustomObject]@{
-    "Computer Name" = $NewComputerName
-    "IP Address" = $IPAddress
-    "Subnet Mask" = $SubnetMask
-    "Default Gateway" = $Gateway
-    "Primary DNS" = $PrimaryDNS
-    "Secondary DNS" = $SecondaryDNS
-    "Network Adapter" = $NetAdapter.Name
-}
-$Summary | Format-Table -AutoSize
+Write-Host "-----------------------------------"
+Write-Host "Computer Name  : $NewComputerName"
+Write-Host "IP Address     : $IPAddress"
+Write-Host "Subnet Mask    : $SubnetMask"
+Write-Host "Default Gateway: $Gateway"
+Write-Host "Primary DNS    : $PrimaryDNS"
+Write-Host "Secondary DNS  : $SecondaryDNS"
+Write-Host "Network Adapter: $NetAdapter.Name"
+Write-Host "-----------------------------------"
 
 # Prompt User Before Restart
-$UserInput = Read-Host "`n🔁 Do you want to restart now? (Y/N)"
+$UserInput = Read-Host "`nDo you want to restart now? (Y/N)"
 if ($UserInput -eq "Y" -or $UserInput -eq "y") {
     Write-Host "Restarting system..."
     Restart-Computer -Force
@@ -83,5 +81,5 @@ if ($UserInput -eq "Y" -or $UserInput -eq "y") {
     Write-Host "Setup complete! Please restart manually to apply changes."
 }
 
-# usage example: .\setup-dc.ps1 -ServerName DC01
+# usage example: .\01_Set_Computer_Name_and_IP_Address.ps1 -ServerName DC01
 
