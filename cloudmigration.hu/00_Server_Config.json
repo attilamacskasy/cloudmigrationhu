@@ -1,18 +1,30 @@
 {
-    "DC01": {
-        "ComputerName": "DC01",
-        "IPAddress": "172.22.22.1",
-        "SubnetMask": "255.255.255.0",
-        "Gateway": "172.22.22.254",
-        "PrimaryDNS": "172.22.23.1",
-        "SecondaryDNS": "172.22.22.1"
+    "GlobalConfig": {
+        "TimeZone": "Central Europe Standard Time",
+        "NTPServer": "0.hu.pool.ntp.org",
+        "EnableRemoteDesktop": true,
+        "DisableFirewall": true,
+        "IEEnhancedSecurityConfiguration": {
+            "Administrators": "Off",
+            "Users": "Off"
+        }
     },
-    "DC02": {
-        "ComputerName": "DC02",
-        "IPAddress": "172.22.23.1",
-        "SubnetMask": "255.255.255.0",
-        "Gateway": "172.22.23.254",
-        "PrimaryDNS": "172.22.22.1",
-        "SecondaryDNS": "172.22.23.1"
+    "Servers": {
+        "DC01": {
+            "ComputerName": "DC01",
+            "IPAddress": "172.22.22.1",
+            "SubnetMask": "255.255.255.0",
+            "Gateway": "172.22.22.254",
+            "PrimaryDNS": "172.22.23.1",
+            "SecondaryDNS": "172.22.22.1"
+        },
+        "DC02": {
+            "ComputerName": "DC02",
+            "IPAddress": "172.22.23.1",
+            "SubnetMask": "255.255.255.0",
+            "Gateway": "172.22.23.254",
+            "PrimaryDNS": "172.22.22.1",
+            "SecondaryDNS": "172.22.23.1"
+        }
     }
 }
