@@ -31,8 +31,6 @@ Consider this an advanced source system for any migration and modernization task
 
 Our primary focus is on **networking and security**, with a commitment to mastering **Kubernetes’ pluggable networking architecture**, including [Project Calico](https://www.tigera.io/tigera-products/calico/).  
 
-![Project Calico](https://www.tigera.io/wp-content/uploads/2021/04/calico-logo.png)
-
 However, this journey is extensive—starting from mounting Windows 2003 servers on DOS 6.22 to power our retro gaming LAN party because sometimes, even cloud engineers need a break.
 
 ![Doom 2](Doom2_title.jpeg)
