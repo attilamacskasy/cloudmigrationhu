@@ -39,6 +39,13 @@ if ($NTPServer) {
     Write-Host "Configuring NTP server to $NTPServer..."
     w32tm /config /manualpeerlist:$NTPServer /syncfromflags:manual /reliable:YES /update
     Restart-Service w32time
+    Write-Host "Waiting for the Windows Time service to stop..."
+    Start-Sleep -Seconds 5
+
+    # Verify NTP Configuration
+    Write-Host "Verifying NTP server configuration..."
+    $ntpConfig = w32tm /query /configuration | Select-String -Pattern "NtpServer"
+    Write-Host "Configured NTP Server: $($ntpConfig -replace '.*NtpServer: (.*)', '$1')"
 } else {
     Write-Host "NTP server not specified in GlobalConfig. Skipping..."
 }
@@ -61,16 +68,22 @@ if ($DisableFirewall) {
 }
 
 # Disable IE Enhanced Security Configuration
+function Disable-IEESC {
+    Write-Host "Disabling Internet Explorer Enhanced Security Configuration (ESC)..."
+    $AdminKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}"
+    $UserKey = "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}"
+    try {
+        Set-ItemProperty -Path $AdminKey -Name "IsInstalled" -Value 0
+        Set-ItemProperty -Path $UserKey -Name "IsInstalled" -Value 0
+        Stop-Process -Name Explorer -Force
+        Write-Host "IE ESC has been disabled for both Administrators and Users."
+    } catch {
+        Write-Host "Error: Unable to disable IE ESC. $($_.Exception.Message)"
+    }
+}
+
 if ($IEConfig) {
-    Write-Host "Disabling IE Enhanced Security Configuration..."
-    $Administrators = $IEConfig.Administrators
-    $Users = $IEConfig.Users
-    if ($Administrators -eq "Off") {
-        Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Active Setup\Installed Components\{781EF3BA-773E-4B42-AC36-50F17C8DA3B3}' -Name "IsInstalled" -Value 0
-    }
-    if ($Users -eq "Off") {
-        Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Active Setup\Installed Components\{5CB30B9D-CDD8-4FD8-AF90-BB076A59EC97}' -Name "IsInstalled" -Value 0
-    }
+    Disable-IEESC
 } else {
     Write-Host "IE Enhanced Security Configuration skipped."
 }
