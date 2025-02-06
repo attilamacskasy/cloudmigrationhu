@@ -14,10 +14,10 @@ The **CloudMigrationHU** project aims to automate the setup and configuration of
 ```mermaid
 graph TD;
     subgraph Network
-        DC01[DC01<br>IP: 172.22.22.1<br>Subnet: 255.255.255.0<br>Gateway: 172.22.22.254]
-        DC02[DC02<br>IP: 172.22.23.1<br>Subnet: 255.255.255.0<br>Gateway: 172.22.23.254]
+        DC01["<img src='download.svg' width='10'/> DC01"]
+        DC02["<img src='download.svg' width='10'/> DC02"]
     end
-    DC01 --- DC02
+    
 ```
 
 
