@@ -1,6 +1,6 @@
-# CloudMigrationHU
+# Cloudmigration.hu - effort to deploy the best possible multi-cloud/hybrid lab
 
-## Purpose - Cloudmigration.hu - effort to deploy the best possible multi-cloud/hybrid lab
+## Purpose
 
 Our mission at CloudMigration.hu LAB is to establish a state-of-the-art, enterprise-inspired multi-site laboratory that leverages Microsoft's best practices for on-premises setups and the Cloud Adoption Framework for cloud environments.
 
@@ -14,6 +14,7 @@ The lab utilizes virtualization technologies from VMware and Hyper-V, runs VMs o
 
 This lab is designed to demonstrate effective cloud migration and modernization strategies, from VMs to Kubernetes, including database migrations. Join us on this exciting journey; stay updated and learn with us at cloudmigration.blog.
 
+
 ## Authors
 
 - [![GitHub](https://img.shields.io/badge/GitHub-attilamacskasy-181717?style=flat-square&logo=github)](https://github.com/attilamacskasy)
@@ -22,7 +23,7 @@ This lab is designed to demonstrate effective cloud migration and modernization 
 - [![GitHub](https://img.shields.io/badge/GitHub-peterkarpati0-181717?style=flat-square&logo=github)](https://github.com/peterkarpati0)
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-karpati--peter-0077B5?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/karpati-peter/)
 
-# The technologies we follow - subnet details for 172.22.22.0/24 (split into /27)
+## The technologies we follow - subnet details for 172.22.22.0/24 (split into /27)
 
 Below is how we allocate various technologies within a single /24 network. Each technology stack is assigned a /27 subnet, providing 30 usable IP addresses per segment.
 This table provides a breakdown of the 172.22.22.0/24 network, divided into smaller /27 subnets.
@@ -35,6 +36,7 @@ However, this journey is extensive—starting from mounting Windows 2003 servers
 
 ![Doom 2](Doom2_title.jpeg)
 
+
 | Technology            | Subnet             | Netmask            | Network Address   | Usable IPs | First Usable IP  | Last Usable IP   | Broadcast Address  |
 |:----------------------|:------------------|:-------------------|:------------------|-----------:|:-----------------|:-----------------|:-------------------|
 | SHARED INFRA         | 172.22.22.0/27     | 255.255.255.224    | 172.22.22.0       |         30 | 172.22.22.1      | 172.22.22.30     | 172.22.22.31       |
@@ -46,9 +48,12 @@ However, this journey is extensive—starting from mounting Windows 2003 servers
 | KUBERNETES          | 172.22.22.192/27   | 255.255.255.224    | 172.22.22.192     |         30 | 172.22.22.193    | 172.22.22.222    | 172.22.22.223      |
 | CLIENTS (DHCP) & NAS | 172.22.22.224/27   | 255.255.255.224    | 172.22.22.224     |         30 | 172.22.22.225    | 172.22.22.254    | 172.22.22.255      |
 
+
 ## Architecture Diagram v1
 
 ![CloudMigration.hu Overview](01_cloudmigrationhu_overview.jpg)
+
+
 
 ## Testing Mermaid (Peter)
 
@@ -63,6 +68,7 @@ We chose to use draw.io instead of Mermaid. However, with the integration of AI 
 | **Complex Diagrams**      | Limited for very detailed designs| Handles complex diagrams easily |
 | **Dependencies**          | Markdown viewer with Mermaid support| External draw.io tool required  |
 | **Dynamic Editing**       | Editable within Markdown file    | Requires re-exporting           |
+
 
 
 ```mermaid
