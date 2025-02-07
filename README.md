@@ -1,4 +1,4 @@
-# Cloudmigration.hu - effort to deploy the best possible multi-cloud/hybrid lab
+# Cloudmigration.hu - Effort to Deploy the Best Possible Multi-Cloud/Hybrid Lab
 
 ## Purpose
 
@@ -22,7 +22,17 @@ This lab is designed to demonstrate effective cloud migration and modernization 
 - [![GitHub](https://img.shields.io/badge/GitHub-peterkarpati0-181717?style=flat-square&logo=github)](https://github.com/peterkarpati0)
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-karpati--peter-0077B5?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/karpati-peter/)
 
-## The technologies we follow - subnet details for 172.22.22.0/24 (split into /27)
+## Purpose
+
+Our mission at CloudMigration.hu LAB is to establish a state-of-the-art, enterprise-inspired multi-site laboratory that leverages Microsoft's best practices for on-premises setups and the Cloud Adoption Framework for cloud environments.
+
+Our lab serves as a comprehensive showcase of the vast expertise accumulated throughout our journey, providing a practical reference for those aiming to implement robust and efficient multi-cloud and hybrid solutions.
+
+## cloudmigration.hu folder
+
+If you don’t have VMM or vCenter to execute in-guest configurations, this set of scripts will handle the setup for you.
+
+# The technologies we follow - subnet details for 172.22.22.0/24 (split into /27)
 
 Below is how we allocate various technologies within a single /24 network. Each technology stack is assigned a /27 subnet, providing 30 usable IP addresses per segment.
 This table provides a breakdown of the 172.22.22.0/24 network, divided into smaller /27 subnets.
@@ -49,26 +59,3 @@ However, this journey is extensive—starting from mounting Windows 2003 servers
 ## Architecture Diagram v1
 
 ![CloudMigration.hu Overview](01_cloudmigrationhu_overview.jpg)
-
-## Testing Mermaid (Peter)
-
-We chose to use draw.io instead of Mermaid. However, with the integration of AI into our workflow, we hope that AI will eventually be able to generate diagrams as polished as the ones we create.
-
-| Feature                   | **Mermaid**                     | **draw.io**                     |
-|---------------------------|----------------------------------|----------------------------------|
-| **Creation Method**       | Text-based (code)               | Graphical (drag-and-drop)       |
-| **Integration in Markdown**| Inline with `mermaid` code block| Embed exported image or link     |
-| **Ease of Use**           | Requires learning syntax         | Intuitive, WYSIWYG              |
-| **Version Control**       | Excellent (text-based)           | Limited (binary files)          |
-| **Complex Diagrams**      | Limited for very detailed designs| Handles complex diagrams easily |
-| **Dependencies**          | Markdown viewer with Mermaid support| External draw.io tool required  |
-| **Dynamic Editing**       | Editable within Markdown file    | Requires re-exporting           |
-
-```mermaid
-graph TD;
-    subgraph Network
-        DC01["<img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyODQuODg2IiBoZWlnaHQ9IjM4OS42ODgiIHZpZXdCb3g9IjAgMCA3NS4zNzYgMTAzLjEwNSI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJBIiB4MT0iODMuODM5IiB5MT0iMjAwLjM5MyIgeDI9IjgzLjQ3IiB5Mj0iMTI3LjI5NSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzA2NzdmYyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzhmY2FmZSIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJCIiB4MT0iMTExLjI2NiIgeTE9IjIwNi4zMDQiIHgyPSIxMTEuNDgiIHkyPSIxMTguMzcyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDUyMzlhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjOTFiY2Y4Ii8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9IkMiIHgxPSIxMDMuMDgyIiB5MT0iMTM2Ljg5IiB4Mj0iMTAzLjE5NCIgeTI9IjEwNy42MjQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNhOGRlZmUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxMmE3ZmMiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iRCIgeDE9IjEyMS45NjIiIHkxPSIxNzIuMTE1IiB4Mj0iMTIxLjczNCIgeTI9IjEzNi40MTIiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZWNiNDUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZTY3MDYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzIuNTgzIC0xMDUuNzM4KSI+PHBhdGggZD0iTTEyOS41MiAxODcuNDY4bC0zNi45NjMgMTkuNjY4VjEzNy4yMWwzNi45NjMtMTkuOTM4eiIgZmlsbD0idXJsKCNCKSIvPjxwYXRoIGQ9Ik05Mi41NTcgMjA3LjEzNkw3NC4wODMgMTk2LjkzVjEyNy4xbDE4LjQ3NCAxMC4xMSIgZmlsbD0idXJsKCNBKSIvPjxwYXRoIGQ9Ik0xMjkuNTIgMTE3LjI3Mkw5Mi41NTcgMTM3LjIxIDc0LjA4MyAxMjcuMWwzNi44NDgtMTkuNjYzeiIgZmlsbD0idXJsKCNDKSIvPjxwYXRoIGQ9Ik03OS4zNTUgMTUwLjgzdjEuMzIybDYuNjMgMy42Mzh2LTEuMzIyem0wIDYuNjczdjEuMzIybDYuNjMgMy42Mzh2LTEuMzIyeiIgZG9taW5hbnQtYmFzZWxpbmU9ImF1dG8iIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNOTIuNTU3IDEzNy4yMWwzNi45NjMtMTkuOTM4em0wIDY5LjkyNlYxMzcuMjFMNzQuMDgzIDEyNy4xbTE4LjQ3NCA4MC4wMzZMNzQuMDgzIDE5Ni45M1YxMjcuMWwzNi44NDgtMTkuNjYzIDE4LjU5IDkuODM2djcwLjE5NnoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIi8+PHBhdGggZD0iTTEyMS43MzIgMTI5LjI4N2wtMjYuMjEgNDYuNDg0aDUyLjQzNnoiIGRvbWluYW50LWJhc2VsaW5lPSJhdXRvIiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTEyMS43MzQgMTM2LjQxMmwyMC4yMzIgMzUuODZoLTQwLjQ1eiIgZG9taW5hbnQtYmFzZWxpbmU9ImF1dG8iIGZpbGw9InVybCgjRCkiLz48L2c+PC9zdmc+' width='10'/><b>DC01</b><br/>172.22.22.1"]
-        DC02["<img src='download.svg' width='10'/><b>DC02</b><br/>172.22.23.1"]
-    end
-    
-```
