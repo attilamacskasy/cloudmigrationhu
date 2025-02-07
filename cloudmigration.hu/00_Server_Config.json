@@ -80,6 +80,7 @@
     "DomainPromotionConfig": {
         "DomainName": "cloudmigration.hu",
         "NetBIOSName": "CLOUDMIGRATION",
+        "AdministratorUsername": "administrator",
         "DNSDelegation": false,
         "InstallDNS": true,
         "DatabasePath": "C:\\Windows\\NTDS",
