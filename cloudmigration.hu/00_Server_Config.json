@@ -31,12 +31,55 @@
                 "172.22.22.1",
                 "172.22.23.1"
             ]
+        },
+        {
+            "ServerName": "VMM",
+            "ComputerName": "VMM",
+            "IPAddress": "172.22.22.90",
+            "SubnetMask": "255.255.255.0",
+            "DefaultGateway": "172.22.22.254",
+            "DNSServers": [
+                "172.22.22.1",
+                "172.22.23.1"
+            ]
+        },
+        {
+            "ServerName": "HV01",
+            "ComputerName": "HV01",
+            "IPAddress": "172.22.22.65",
+            "SubnetMask": "255.255.255.0",
+            "DefaultGateway": "172.22.22.254",
+            "DNSServers": [
+                "172.22.22.1",
+                "172.22.23.1"
+            ]
+        },
+        {
+            "ServerName": "HV02",
+            "ComputerName": "HV02",
+            "IPAddress": "172.22.22.66",
+            "SubnetMask": "255.255.255.0",
+            "DefaultGateway": "172.22.22.254",
+            "DNSServers": [
+                "172.22.22.1",
+                "172.22.23.1"
+            ]
+        },
+        {
+            "ServerName": "HV03",
+            "ComputerName": "HV03",
+            "IPAddress": "172.22.22.67",
+            "SubnetMask": "255.255.255.0",
+            "DefaultGateway": "172.22.22.254",
+            "DNSServers": [
+                "172.22.22.1",
+                "172.22.23.1"
+            ]
         }
     ],
     "DomainPromotionConfig": {
         "DomainName": "cloudmigration.hu",
         "NetBIOSName": "CLOUDMIGRATION",
-        "SafeModePassword": "P@ssword123",
         "DNSDelegation": false,
         "InstallDNS": true,
         "DatabasePath": "C:\\Windows\\NTDS",
