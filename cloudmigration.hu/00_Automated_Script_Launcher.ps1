@@ -71,8 +71,8 @@ while ($true) {
     $selectedScript = $nextScriptIndex[0]
 
     # Wait for Enter or exit command
-    $input = Read-Host
-    if ($input -eq "exit") { break }
+    $user_input = Read-Host
+    if ($user_input -eq "exit") { break }
 
     # Run the selected script
     try {
