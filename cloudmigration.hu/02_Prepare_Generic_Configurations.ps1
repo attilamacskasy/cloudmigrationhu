@@ -1,3 +1,6 @@
+# This script works on both Windows Server 2022 and Windows Server 2025.
+# Not yet tested on Windows 2003 server in our retro lab, haha :-)
+
 # Load Global Configuration and Apply Generic Settings to the Server
 
 # Load Configuration File
