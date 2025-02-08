@@ -5,7 +5,8 @@ import sys
 
 # Parameters
 VMWARE_DIR = r"C:\Program Files (x86)\VMware\VMware Workstation"
-BACKUP_DIR = os.path.expanduser(r"C:\Users\Attila\Desktop\Code\cloudmigrationhu")
+DESKTOP_DIR = os.path.join(os.path.expanduser("~"), "Desktop")
+BACKUP_DIR = os.path.join(DESKTOP_DIR, "Code", "cloudmigrationhu")
 TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
 BACKUP_FILE = f"WS17_vnet_{TIMESTAMP}.dat"
 BACKUP_PATH = os.path.join(BACKUP_DIR, BACKUP_FILE)
