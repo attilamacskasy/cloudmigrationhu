@@ -38,6 +38,7 @@ This table provides a summary of each script in the repository, including a brie
 | **05_Join_Computer_To_Domain.ps1**                   | Joins a Windows computer to an Active Directory domain. | `DomainName`, `OUPath` (from config). |
 | **06_SQL_2022_Unattended_Deploy.ps1**                | Installs Microsoft SQL Server 2022 in unattended mode. | SQL instance name, SA password (prompted). |
 | **07_SSMS-Unattended_Download_and_Deploy.ps1**       | Downloads and installs SQL Server Management Studio (SSMS). | `SSMS_Download_URL`, local file path for download. |
+| **08_Reconfigure_HV_Cluster.ps1**                    | Reconfigures nested Hyper-V VMs running on VMware Workstation 17 by adjusting memory and CPU settings. | VM names, memory allocation, number of processors, and cores per processor. |
 | **09_Install-WindowsFeature_Hyper-V.ps1**            | Installs the Hyper-V role and management tools on a Windows Server. | No user-defined parameters, installs `Hyper-V` role. |
 | **10_Rename_NICs_on_Hyper-V.ps1**                    | Renames Hyper-V network adapters based on predefined IP mappings. | Static mappings of IP ranges to NIC names. |
 | **11_Disable-IPv6-AllAdapters.ps1**                  | Disables IPv6 on all network adapters. | No configurable parameters. |
@@ -270,6 +271,65 @@ By utilizing this script, administrators can efficiently integrate new computers
 - **Cleans Up**: Removes the downloaded installer from the temporary path to free up space and maintain cleanliness.
 
 *Importance*: Automating the deployment of SSMS ensures a consistent installation process across multiple environments, reduces manual effort, and minimizes the risk of human error. This script is particularly beneficial for administrators and DevOps professionals who require a reliable and repeatable method to install SSMS in various setups.
+
+---
+
+**08_Reconfigure_HV_Cluster.ps1**
+
+*Description*:  
+This PowerShell script automates the reconfiguration of nested Hyper-V virtual machines (VMs) running within VMware Workstation 17. It adjusts the memory and processor settings of specified VMs to optimize resource allocation based on predefined configurations.
+
+*Functionality*:  
+Upon execution, the script performs the following steps:
+
+1. **Define VM Configuration Options**:  
+   Specifies a list of VMs along with their desired memory and processor configurations.
+
+2. **Iterate Through Each VM**:  
+   For each VM in the configuration list:
+   - **Check VM State**:  
+     Determines if the VM is currently running.
+   - **Stop VM if Running**:  
+     Gracefully shuts down the VM if it is active to allow for configuration changes.
+   - **Modify VM Settings**:  
+     Adjusts the VM's memory allocation, number of processors, and cores per processor as specified.
+   - **Start VM**:  
+     Restarts the VM after applying the new configurations.
+
+3. **Logging**:  
+   Records the actions taken for each VM, including any errors encountered during the process.
+
+*Configuration Options*:  
+The script utilizes a predefined list of VM configurations, specifying the desired memory and processor settings for each VM.
+
+
+| **Option**  | **Memory** | **Processors** | **Cores Per Processor** |
+|------------|-----------|--------------|----------------------|
+| **1 - Small**  | 8 GB      | 1            | 1                    |
+| **2 - Medium** | 16 GB     | 2            | 2                    |
+| **3 - Large**  | 32 GB     | 4            | 4                    |
+
+*Default*:  
+
+| **VM Name** | **Memory (MB)** | **Processors** | **Cores Per Processor** |
+|-------------|-----------------|----------------|-------------------------|
+| `HV01`      | 8192            | 2              | 1                       |
+| `HV02`      | 8192            | 2              | 1                       |
+| `HV03`      | 8192            | 2              | 1                       |
+
+*Importance*:  
+Adjusting the resource allocation of nested Hyper-V VMs is crucial for:
+
+- **Performance Optimization**: Ensuring that each VM has sufficient resources to perform its tasks efficiently without overcommitting the host system.
+
+- **Resource Management**: Balancing the distribution of CPU and memory resources among multiple VMs to prevent any single VM from monopolizing system resources.
+
+- **Scalability**: Allowing for dynamic adjustment of VM configurations to meet changing workload demands.
+
+By automating this reconfiguration process, the script reduces manual effort, minimizes the risk of configuration errors, and ensures consistency across multiple VMs.
+
+*Note*:  
+Before executing this script, ensure that all VMs are in a state that allows for configuration changes and that the host system has adequate resources to accommodate the specified configurations. It is advisable to back up VM configurations prior to making changes.
 
 ---
 
