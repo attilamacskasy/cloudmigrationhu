@@ -22,7 +22,7 @@ This lab is designed to demonstrate effective cloud migration and modernization 
 - [![GitHub](https://img.shields.io/badge/GitHub-peterkarpati0-181717?style=flat-square&logo=github)](https://github.com/peterkarpati0)
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-karpati--peter-0077B5?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/karpati-peter/)
 
-## Purpose
+## Vision
 
 Our mission at CloudMigration.hu LAB is to establish a state-of-the-art, enterprise-inspired multi-site laboratory that leverages Microsoft's best practices for on-premises setups and the Cloud Adoption Framework for cloud environments.
 
@@ -32,7 +32,7 @@ Our lab serves as a comprehensive showcase of the vast expertise accumulated thr
 
 If you don’t have VMM or vCenter to execute in-guest configurations, this set of scripts will handle the setup for you.
 
-# The technologies we follow - subnet details for 172.22.22.0/24 (split into /27)
+## The technologies we follow - subnet details for 172.22.22.0/24 (split into /27)
 
 Below is how we allocate various technologies within a single /24 network. Each technology stack is assigned a /27 subnet, providing 30 usable IP addresses per segment.
 This table provides a breakdown of the 172.22.22.0/24 network, divided into smaller /27 subnets.
