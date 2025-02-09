@@ -366,16 +366,30 @@ Upon execution, the script:
   - If a match is found, constructs a new name using the VMnet ID and acronym (e.g., `"VMnet0-MGMNT"`) and renames the adapter accordingly.
 - **Logs Results**: Outputs the original and new names of the network adapters, along with their IP addresses, for verification purposes.
 
-*Predefined Adapter Mappings*:  
+*Hyper-V Host NIC Configuration*:
+
+| NIC Number | Link Speed | Settings in VMware Workstation | vmnet ID | Purpose               | Acronym | Description                                           | IP Range         | VLAN |
+|------------|------------|--------------------------------|----------|-----------------------|---------|-----------------------------------------------------|------------------|------|
+| NIC 1      | 1 Gbps     | Bridged (LAB access on LAN)   | VMnet0   | Management            | MGMNT   | Used for host management and Hyper-V administration | 172.22.22.0/24   | n/a  |
+| NIC 2      | 1 Gbps     | Host-only                     | VMnet1   | Live Migration        | LVMIG   | Dedicated for VM live migration between hosts       | 192.168.1.0/24   | n/a  |
+| NIC 3      | 1 Gbps     | Host-only                     | VMnet2   | Cluster Communication | CLNET   | Private cluster network for heartbeats and traffic  | 192.168.2.0/24   | n/a  |
+| NIC 4      | 10 Gbps    | Bridged (Synology 10G iSCSI)  | VMnet10  | Storage (iSCSI)       | ISCSI   | iSCSI traffic for shared storage access             | 192.168.22.0/24  | n/a  |
+| NIC 5      | 1 Gbps     | Host-only                     | VMnet3   | VM Traffic (Internal) | VMINT   | Internal VM communication without external access   | 192.168.3.0/24   | n/a  |
+| NIC 6      | 1 Gbps     | NAT                           | VMnet8   | VM Traffic (External) | VMEXT   | Provides internet access to VMs                    | 192.168.0.0/24   | n/a  |
+| NIC 7      | 1 Gbps     | Host-only                     | VMnet4   | Backup Network        | BACKP   | Dedicated network for backup operations            | 192.168.4.0/24   | n/a  |
+
+*Predefined Adapter Mappings*:
 The script uses the following hardcoded mappings to determine the adapter names:
 
-| Network Address  | Subnet Mask       | Assigned Name Format  | Description |
-|------------------|------------------|----------------------|-------------|
-| `192.168.1.0`   | `255.255.255.0`   | `VMnet0-MGMNT`      | Management Network |
-| `192.168.2.0`   | `255.255.255.0`   | `VMnet1-STORAGE`    | Storage Network |
-| `192.168.3.0`   | `255.255.255.0`   | `VMnet2-VMs`       | Virtual Machine Network |
-| `10.0.0.0`      | `255.255.255.0`   | `VMnet3-EXTERNAL`   | External Network |
-| `172.16.0.0`    | `255.255.255.0`   | `VMnet4-BACKUP`     | Backup Network |
+| **IP Range**       | **VMnet ID** | **Acronym** |
+|--------------------|-------------|------------|
+| 172.22.22.0/24    | VMnet0       | MGMNT      |
+| 192.168.1.0/24    | VMnet1       | LVMIG      |
+| 192.168.2.0/24    | VMnet2       | CLNET      |
+| 192.168.22.0/24   | VMnet10      | ISTOR      |
+| 192.168.3.0/24    | VMnet3       | VMINT      |
+| 192.168.0.0/24    | VMnet8       | VMEXT      |
+| 192.168.4.0/24    | VMnet4       | BACKP      |
 
 *Importance*:  
 In Hyper-V environments with multiple network adapters, having a clear and consistent naming convention is crucial for:
