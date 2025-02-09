@@ -1,3 +1,10 @@
+# WARNING: This script is experimental. I used Windows GUI to create Failover Cluster, because of required validation and configuration is too complex to automate at this point (based on my knowledge).
+# I will try to automate this process using PowerShell. 
+
+# I will use the Install-WindowsFeature cmdlet to install the Failover Clustering feature and the Set-Service cmdlet to configure the Cluster Service to start automatically. 
+# I will also verify that the Cluster Service is running after the installation.
+# I will run this script on each node in the cluster to ensure that Failover Clustering is installed and configured correctly.
+
 # Define the node (local machine)
 $NodeName = $env:COMPUTERNAME
 

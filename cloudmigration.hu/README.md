@@ -1,12 +1,12 @@
-## Getting Started
+## Getting Started - WARNING (outdated)
 
 If you don’t have VMM or vCenter to execute in-guest configurations, this set of scripts will handle the setup for you.
 
 ### Steps:
 
 1. **Set Execution Policy:**
-   - We recommend running `00_Set-ExecutionPolicy_Bypass_CurrentUser.txt` for a persistent configuration.
-   - Alternatively, you can use `00_Set-ExecutionPolicy_Bypass_Process.txt`, but keep in mind that this setting resets after every restart, requiring you to run it again.
+   - We recommend running `000_Set-ExecutionPolicy_Bypass_CurrentUser.txt` for a persistent configuration.
+   - Alternatively, you can use `000_Set-ExecutionPolicy_Bypass_Process.txt`, but keep in mind that this setting resets after every restart, requiring you to run it again.
 
 2. **Review Configuration:**
    - Open `00_Server_Config.json` and adjust the settings as needed before proceeding.
