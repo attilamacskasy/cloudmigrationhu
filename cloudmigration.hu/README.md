@@ -635,7 +635,7 @@ The script includes a warning indicating that it is experimental and that the au
 
 ---
 
-**17_CreateExternalSwitch_on_Hyper-V_for_MGMNT.ps1**
+**17_Create_External_Switch_on_Hyper-V_for_MGMNT.ps1**
 
 *Description*:  
 This PowerShell script automates the creation of an external virtual switch on a Hyper-V host, specifically for management purposes. It ensures that the virtual switch is properly configured and associated with the designated physical network adapter, facilitating network connectivity for virtual machines and management operations.
