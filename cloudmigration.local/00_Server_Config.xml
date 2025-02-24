@@ -1,0 +1,57 @@
+ <!-- Note that because Windows Server 2003 R2 supports only PowerShell 2.0 (with .NET Framework 2.0 or 3.5) and lacks native JSON processing (which wasn’t introduced until PowerShell 3.0), this script uses an XML configuration file instead of the JSON file (00_Server_Config.json). -->
+<Servers>
+  <Server>
+    <ComputerName>L-DC01</ComputerName>
+    <IPAddress>172.22.16.1</IPAddress>
+    <SubnetMask>255.255.255.0</SubnetMask>
+    <DefaultGateway>172.22.16.254</DefaultGateway>
+    <DNSServers>
+      <!-- DNS1: the other DC (L-DC02) -->
+      <Server>172.22.17.1</Server>
+      <!-- DNS2: itself (use its own IP) -->
+      <Server>172.22.16.1</Server>
+    </DNSServers>
+  </Server>
+  <Server>
+    <ComputerName>L-FS01</ComputerName>
+    <IPAddress>172.22.16.2</IPAddress>
+    <SubnetMask>255.255.255.0</SubnetMask>
+    <DefaultGateway>172.22.16.254</DefaultGateway>
+    <DNSServers>
+      <Server>172.22.16.1</Server>
+      <Server>172.22.17.1</Server>
+    </DNSServers>
+  </Server>
+  <Server>
+    <ComputerName>L-DB01</ComputerName>
+    <IPAddress>172.22.16.4</IPAddress>
+    <SubnetMask>255.255.255.0</SubnetMask>
+    <DefaultGateway>172.22.16.254</DefaultGateway>
+    <DNSServers>
+      <Server>172.22.16.1</Server>
+      <Server>172.22.17.1</Server>
+    </DNSServers>
+  </Server>
+  <Server>
+    <ComputerName>L-APP01</ComputerName>
+    <IPAddress>172.22.16.6</IPAddress>
+    <SubnetMask>255.255.255.0</SubnetMask>
+    <DefaultGateway>172.22.16.254</DefaultGateway>
+    <DNSServers>
+      <Server>172.22.16.1</Server>
+      <Server>172.22.17.1</Server>
+    </DNSServers>
+  </Server>
+  <Server>
+    <ComputerName>L-DC02</ComputerName>
+    <IPAddress>172.22.17.1</IPAddress>
+    <SubnetMask>255.255.255.0</SubnetMask>
+    <DefaultGateway>172.22.17.254</DefaultGateway>
+    <DNSServers>
+      <!-- DNS1: the other DC (L-DC01) -->
+      <Server>172.22.16.1</Server>
+      <!-- DNS2: itself (use its own IP) -->
+      <Server>172.22.17.1</Server>
+    </DNSServers>
+  </Server>
+</Servers>

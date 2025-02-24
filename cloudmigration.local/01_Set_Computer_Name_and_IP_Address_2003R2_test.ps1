@@ -1,0 +1,1 @@
+.\01_Set_Computer_Name_and_IP_Address_2003R2.ps1 -ServerName L-DC01
