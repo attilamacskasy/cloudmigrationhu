@@ -1,0 +1,34 @@
+;SetupMgrTag
+[Unattended]
+    OemSkipEula=Yes
+    InstallFilesPath=C:\sysprep\i386
+
+[GuiUnattended]
+    AdminPassword="setup1"
+    EncryptedAdminPassword=NO
+    OEMSkipRegional=1
+    TimeZone=95
+    OemSkipWelcome=1
+
+[UserData]
+    ProductKey=HDXR2-62748-6XG6Y-4BT6T-R6H43
+    FullName="Attila"
+    OrgName="cloudmigration.blog"
+    ComputerName=*
+
+[LicenseFilePrintData]
+    AutoMode=PerSeat
+
+[TapiLocation]
+    CountryCode=36
+
+[SetupMgr]
+    DistFolder=C:\sysprep\i386
+    DistShare=windist
+
+[Identification]
+    JoinWorkgroup=WORKGROUP
+
+[Networking]
+    InstallDefaultComponents=Yes
+
