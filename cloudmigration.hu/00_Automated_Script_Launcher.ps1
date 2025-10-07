@@ -76,14 +76,14 @@ while ($true) {
 
     # Run the selected script
     try {
+        # Mark as completed and update status BEFORE running the script
+        $selectedScript.Status = "x"
+        Add-Content -Path $stateFile -Value $selectedScript.Name
+
         Write-Host "Running $($selectedScript.Name)..." -ForegroundColor Green
         & PowerShell -ExecutionPolicy Bypass -File $selectedScript.Path | Tee-Object -FilePath $logFile -Append
         Write-Host "Script completed successfully!" -ForegroundColor Green
-        
-        # Mark as completed and update status
-        $selectedScript.Status = "x"
-        Add-Content -Path $stateFile -Value $selectedScript.Name
-        
+
         # Refresh the state for the menu
         $completedScripts = Get-Content -Path $stateFile -ErrorAction SilentlyContinue
         $scripts = $scriptList | ForEach-Object {
