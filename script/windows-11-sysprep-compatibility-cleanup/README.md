@@ -43,6 +43,7 @@ Prepare Windows 11 VMs for Proxmox template creation by handling cloudbase-init 
 | | `Disable` | Stop and disable cloudbase-init services |
 | | `Enable` | Enable cloudbase-init for template deployment |
 | `-RunSysprep` | Switch | Run Sysprep after cleanup |
+| `-ScanUserPackages` | Switch | Perform deep scan for user-only AppX packages and remove Sysprep blockers (slower, optional) |
 
 ## 🔍 What Gets Removed
 
@@ -127,6 +128,16 @@ foreach ($pkg in $all) {
 
 ## 📖 Full Documentation
 See `SYSPREP_TROUBLESHOOTING.md` for complete troubleshooting guide.
+
+## 🖼️ Illustrations
+
+These screenshots live next to the script and show typical usage output.
+
+- ![Win11-SysprepCleanup.ps1 - phase 1: disabling cloudbase-init, checking BitLocker, AppX cleanup summary](Win11-SysprepCleanup.ps1-01.jpg)
+   - Alt: "PowerShell window running Win11-SysprepCleanup.ps1 with cloudbase-init disabled, BitLocker status shown, and AppX Package Removal Summary indicating removed/skipped packages."
+
+- ![Win11-SysprepCleanup.ps1 - phase 2: final verification and Sysprep run with -ScanUserPackages enabled](Win11-SysprepCleanup.ps1-02.jpg)
+   - Alt: "PowerShell window showing final verification with -ScanUserPackages, cleanup complete message, recommended next steps, and Sysprep.exe progress dialog while Sysprep generalizes and shuts down the VM."
 
 ---
 **Last Updated:** December 5, 2025
