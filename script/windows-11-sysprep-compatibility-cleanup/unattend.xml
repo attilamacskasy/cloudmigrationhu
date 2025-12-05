@@ -1,37 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Unattend file for Windows 11 template in Proxmox
+  - Skips the entire OOBE wizard (user, region, privacy, telemetry screens)
+  - Creates a local Administrator user "localuser"
+  - Uses Hungarian (hu-HU) locale and keyboard
+  - Time zone: Central Europe Standard Time
+  - Designed to be used together with Cloudbase-Init + Proxmox Cloud-Init
+-->
+
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
 
+  <!-- ============================================================
+       PASS: generalize
+       ============================================================
+       Runs when Sysprep generalize is executed.
+       Here we only set SkipRearm so we can rebuild images multiple
+       times without hitting activation rearm limits.
+       ============================================================ -->
+  <settings pass="generalize">
+    <component name="Microsoft-Windows-Security-SPP"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!--
+        SkipRearm = 1 means Sysprep will not decrease the activation
+        rearm counter. This is useful for golden images in labs.
+      -->
+      <SkipRearm>1</SkipRearm>
+    </component>
+  </settings>
+
+  <!-- ============================================================
+       PASS: oobeSystem
+       ============================================================
+       Runs during the first boot after Sysprep generalize.
+       We use this pass to:
+         - set language, region, keyboard
+         - completely skip the OOBE UI (including privacy pages)
+         - create a local administrator account "localuser"
+       ============================================================ -->
   <settings pass="oobeSystem">
-    <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-      <InputLocale>en-US</InputLocale>
-      <SystemLocale>en-US</SystemLocale>
-      <UILanguage>en-US</UILanguage>
-      <UILanguageFallback>en-US</UILanguageFallback>
-      <UserLocale>en-US</UserLocale>
+
+    <!-- ==========================================================
+         LANGUAGE / REGION / KEYBOARD SETTINGS
+         ==========================================================
+         All set to Hungarian (hu-HU).
+         This should prevent the region / keyboard selection screens.
+         ========================================================== -->
+    <component name="Microsoft-Windows-International-Core"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!-- Keyboard layout used during OOBE and for the system -->
+      <InputLocale>hu-HU</InputLocale>
+
+      <!-- System locale (non-Unicode programs, etc.) -->
+      <SystemLocale>hu-HU</SystemLocale>
+
+      <!-- UI language (display language) -->
+      <UILanguage>hu-HU</UILanguage>
+
+      <!-- Fallback UI language (used if main is not available) -->
+      <UILanguageFallback>hu-HU</UILanguageFallback>
+
+      <!-- User locale (number/date formats, etc.) -->
+      <UserLocale>hu-HU</UserLocale>
     </component>
 
-    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+    <!-- ==========================================================
+         SHELL / OOBE BEHAVIOR
+         ==========================================================
+         This block:
+           - hides almost all OOBE screens
+           - skips user + machine OOBE
+           - auto-creates a local administrator account
+           - sets time zone, owner, organization
+         ========================================================== -->
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+
+      <!--
+        OOBE configuration:
+        These options together are responsible for hiding:
+          - EULA page
+          - MS account and online account screens
+          - wireless setup
+          - privacy / telemetry choices
+          - region / keyboard / "how will this device be used" prompts
+      -->
       <OOBE>
+        <!-- Do not show the license agreement page -->
         <HideEULAPage>true</HideEULAPage>
+
+        <!-- Hide OEM registration (not relevant in a VM lab) -->
         <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+
+        <!-- Do not offer Microsoft account / online account setup -->
         <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+
+        <!-- We do not need Wi-Fi setup in Proxmox VMs -->
         <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+
+        <!-- Treat this as a work (corporate) device, not a home PC -->
         <NetworkLocation>Work</NetworkLocation>
+
+        <!-- "Protect your PC" default: 1 = recommended settings -->
         <ProtectYourPC>1</ProtectYourPC>
+
+        <!--
+          The two keys below are the most important:
+          They instruct Windows to skip the entire OOBE flow
+          (including privacy / diagnostics / tracking pages).
+        -->
         <SkipUserOOBE>true</SkipUserOOBE>
         <SkipMachineOOBE>true</SkipMachineOOBE>
       </OOBE>
+
+      <!--
+        LOCAL USER CREATION
+        ===================
+        We create one local Administrator account:
+          username:  localuser
+          password:  P@ssw0rd!
+        This prevents Windows from asking for:
+          - local account name
+          - password
+          - security questions
+        You can log on as "localuser" the first time if needed.
+        In production you may want to change this username/password.
+      -->
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                        wcm:action="add">
+            <!-- Local username that will be created during OOBE -->
+            <Name>localuser</Name>
+
+            <!-- Add the account to the local Administrators group -->
+            <Group>Administrators</Group>
+
+            <!-- Plain text password for the local account -->
+            <Password>
+              <Value>P@ssw0rd!</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <!-- Registration fields (optional, purely cosmetic) -->
       <RegisteredOwner>Administrator</RegisteredOwner>
       <RegisteredOrganization>Proxmox</RegisteredOrganization>
-      <TimeZone>UTC</TimeZone>
+
+      <!--
+        Time zone for Hungary and most of Central Europe.
+        Examples: "W. Europe Standard Time" also works,
+        but "Central Europe Standard Time" is common.
+      -->
+      <TimeZone>Central Europe Standard Time</TimeZone>
+
+      <!--
+        NOTE:
+        We intentionally do NOT set ComputerName here.
+        Proxmox + Cloudbase-Init + Cloud-Init will set the hostname
+        automatically based on the VM name and Cloud-Init metadata.
+      -->
+
     </component>
 
-  </settings>
-
-  <settings pass="generalize">
-    <component name="Microsoft-Windows-Security-SPP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-      <SkipRearm>1</SkipRearm>
-    </component>
   </settings>
 
 </unattend>

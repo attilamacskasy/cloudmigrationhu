@@ -29,15 +29,45 @@
     
     Step 3: Final Preparation (AFTER all installations complete)
     -------------------------------------------------------------
-    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage hu-HU
     
-    This will:
-    - Re-enable cloudbase-init services (required for Proxmox cloud-init)
-    - Turn off BitLocker on C: drive
-    - Remove Sysprep-blocking AppX packages
-    - Run optional user-only AppX scan when requested
-    - Run Sysprep to generalize the image
-    - Shutdown the VM
+    RECOMMENDED: Always use -UnattendLanguage (hu-HU or en-US) to:
+    - Generate C:\Windows\System32\Sysprep\unattend.xml (you can review before Sysprep runs)
+    - Automatically skip all OOBE screens (language, EULA, privacy, account setup)
+    - Create local "localuser" administrator account automatically
+    - Set proper timezone and regional settings
+    
+    This script executes the following steps when run with -RunSysprep:
+    
+    STEP 1: Cloudbase-Init Management
+    ----------------------------------
+    - Re-enables cloudbase-init services (required for Proxmox cloud-init)
+    - Services will start automatically on first boot after template deployment
+    
+    STEP 2: BitLocker Cleanup
+    --------------------------
+    - Checks if BitLocker is enabled on C: drive
+    - Disables BitLocker if enabled (required for Sysprep)
+    - Waits for full decryption to complete
+    
+    STEP 3: AppX Package Removal
+    -----------------------------
+    - Removes Sysprep-blocking AppX packages (language packs, Xbox, etc.)
+    - Removes provisioned packages (prevents reinstall for new users)
+    - Optional: Deep scan for user-only packages (use -ScanUserPackages switch)
+    - Displays summary: removed/skipped/failed counts
+    
+    STEP 4: Unattend.xml Generation (if -UnattendLanguage specified)
+    -----------------------------------------------------------------
+    - Creates C:\Windows\System32\Sysprep\unattend.xml with your language choice
+    - File includes comprehensive comments explaining each setting
+    - You can review/modify this file before Sysprep runs
+    
+    STEP 5: Sysprep Execution
+    --------------------------
+    - Runs: C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown
+    - With unattend.xml: adds /unattend:C:\Windows\System32\Sysprep\unattend.xml
+    - VM will shutdown automatically when complete
     
     Step 4: Convert to Proxmox Template
     ------------------------------------
@@ -57,12 +87,26 @@
         Run Sysprep /generalize /oobe /shutdown after cleanup
 
     -UnattendLanguage <String>
-        Optional. When specified together with -RunSysprep, generates
-        C:\Windows\System32\Sysprep\unattend.xml and runs Sysprep with
-        /unattend:C:\Windows\System32\Sysprep\unattend.xml.
+        HIGHLY RECOMMENDED! Generates C:\Windows\System32\Sysprep\unattend.xml
+        with comprehensive settings to automate OOBE and skip all manual prompts.
+        
+        When used with -RunSysprep, the script will:
+        1. Create unattend.xml with your chosen language/region settings
+        2. You can review the generated XML file before Sysprep runs
+        3. Run Sysprep with /unattend parameter to use this configuration
+        
+        The generated unattend.xml will:
+        - Skip all OOBE wizard screens (language, EULA, privacy, account setup)
+        - Create local administrator account "localuser" with password "P@ssw0rd!"
+        - Set keyboard layout and timezone based on language choice
+        - Configure privacy settings to recommended baseline
+        
         Supported values:
-          - en-US  : English (United States)
-          - hu-HU  : Hungarian
+          - en-US  : English (United States) / UTC timezone
+          - hu-HU  : Hungarian / Central Europe Standard Time
+        
+        Without this parameter, Windows will show all OOBE screens on first boot,
+        which defeats the purpose of an automated template deployment!
     
     -ScanUserPackages <Switch>
         When supplied, detects and removes AppX packages installed for a single user only
@@ -76,20 +120,29 @@
     # Disable cloudbase-init before installing apps
     .\Win11-SysprepCleanup.ps1 -CloudbaseAction Disable
     
-    # Enable cloudbase-init and prepare for final sysprep
+    # RECOMMENDED: Enable cloudbase-init and run Sysprep with unattend.xml (Hungarian)
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage hu-HU
+    
+    # RECOMMENDED: Enable cloudbase-init and run Sysprep with unattend.xml (English)
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage en-US
+    
+    # Enable cloudbase-init and run Sysprep WITHOUT unattend.xml (not recommended)
+    # This will require manual OOBE configuration on first boot
     .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep
     
-    # Just cleanup without sysprep (manual sysprep later)
+    # Just cleanup and enable cloudbase-init without running Sysprep
+    # Use this if you want to run Sysprep manually later
     .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable
 
-    # Run the deep user-only AppX scan (optional)
-    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -ScanUserPackages
-
-    # Run Sysprep with generated unattend.xml in Hungarian
-    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage hu-HU
-
-    # Run Sysprep with generated unattend.xml in English (en-US)
-    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage en-US
+    # Run with deep user-only AppX package scan (takes longer, more thorough)
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -ScanUserPackages -RunSysprep -UnattendLanguage hu-HU
+    
+    # Manual Sysprep (if you didn't use -RunSysprep):
+    # WITH unattend.xml (recommended - review/edit C:\Windows\System32\Sysprep\unattend.xml first):
+    C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml
+    
+    # WITHOUT unattend.xml (will show all OOBE screens on first boot):
+    C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown
 #>
 
 param(
@@ -557,74 +610,230 @@ Write-Host "`nAppX cleanup finished." -ForegroundColor Cyan
 Write-Host "IMPORTANT: Reboot before running Sysprep to ensure all changes take effect." -ForegroundColor Yellow
 #endregion
 
-#region Optionally run Sysprep
-if ($RunSysprep) {
+#region Generate unattend.xml if language is specified
+if ($UnattendLanguage) {
     $unattendPath = Join-Path $env:WINDIR 'System32\Sysprep\unattend.xml'
+    
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "GENERATING UNATTEND.XML" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Language: $UnattendLanguage" -ForegroundColor White
+    
+    $inputLocale  = $UnattendLanguage
+    $systemLocale = $UnattendLanguage
+    $userLocale   = $UnattendLanguage
+    $uiLanguage   = $UnattendLanguage
 
-        if ($UnattendLanguage) {
-                Write-Host "`nGenerating unattend.xml for language: $UnattendLanguage" -ForegroundColor Cyan
+    # Determine timezone based on language
+    $timeZone = if ($UnattendLanguage -eq 'hu-HU') { 'Central Europe Standard Time' } else { 'UTC' }
 
-                $inputLocale  = $UnattendLanguage
-                $systemLocale = $UnattendLanguage
-                $userLocale   = $UnattendLanguage
-                $uiLanguage   = $UnattendLanguage
-
-                $unattendContent = @"
+    $unattendContent = @"
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Unattend file for Windows 11 template in Proxmox
+  - Skips the entire OOBE wizard (user, region, privacy, telemetry screens)
+  - Creates a local Administrator user "localuser"
+  - Uses $UnattendLanguage locale and keyboard
+  - Time zone: $timeZone
+  - Designed to be used together with Cloudbase-Init + Proxmox Cloud-Init
+-->
+
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
 
-    <settings pass="oobeSystem">
-        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-            <InputLocale>$inputLocale</InputLocale>
-            <SystemLocale>$systemLocale</SystemLocale>
-            <UILanguage>$uiLanguage</UILanguage>
-            <UILanguageFallback>$uiLanguage</UILanguageFallback>
-            <UserLocale>$userLocale</UserLocale>
-        </component>
+  <!-- ============================================================
+       PASS: generalize
+       ============================================================
+       Runs when Sysprep generalize is executed.
+       Here we only set SkipRearm so we can rebuild images multiple
+       times without hitting activation rearm limits.
+       ============================================================ -->
+  <settings pass="generalize">
+    <component name="Microsoft-Windows-Security-SPP"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!--
+        SkipRearm = 1 means Sysprep will not decrease the activation
+        rearm counter. This is useful for golden images in labs.
+      -->
+      <SkipRearm>1</SkipRearm>
+    </component>
+  </settings>
 
-        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-            <OOBE>
-                <HideEULAPage>true</HideEULAPage>
-                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
-                <NetworkLocation>Work</NetworkLocation>
-                <ProtectYourPC>1</ProtectYourPC>
-                <SkipUserOOBE>true</SkipUserOOBE>
-                <SkipMachineOOBE>true</SkipMachineOOBE>
-            </OOBE>
-            <RegisteredOwner>Administrator</RegisteredOwner>
-            <RegisteredOrganization>Proxmox</RegisteredOrganization>
-            <TimeZone>UTC</TimeZone>
-        </component>
+  <!-- ============================================================
+       PASS: oobeSystem
+       ============================================================
+       Runs during the first boot after Sysprep generalize.
+       We use this pass to:
+         - set language, region, keyboard
+         - completely skip the OOBE UI (including privacy pages)
+         - create a local administrator account "localuser"
+       ============================================================ -->
+  <settings pass="oobeSystem">
 
-    </settings>
+    <!-- ==========================================================
+         LANGUAGE / REGION / KEYBOARD SETTINGS
+         ==========================================================
+         All set to $UnattendLanguage.
+         This should prevent the region / keyboard selection screens.
+         ========================================================== -->
+    <component name="Microsoft-Windows-International-Core"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!-- Keyboard layout used during OOBE and for the system -->
+      <InputLocale>$inputLocale</InputLocale>
 
-    <settings pass="generalize">
-        <component name="Microsoft-Windows-Security-SPP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-            <SkipRearm>1</SkipRearm>
-        </component>
-    </settings>
+      <!-- System locale (non-Unicode programs, etc.) -->
+      <SystemLocale>$systemLocale</SystemLocale>
+
+      <!-- UI language (display language) -->
+      <UILanguage>$uiLanguage</UILanguage>
+
+      <!-- Fallback UI language (used if main is not available) -->
+      <UILanguageFallback>$uiLanguage</UILanguageFallback>
+
+      <!-- User locale (number/date formats, etc.) -->
+      <UserLocale>$userLocale</UserLocale>
+    </component>
+
+    <!-- ==========================================================
+         SHELL / OOBE BEHAVIOR
+         ==========================================================
+         This block:
+           - hides almost all OOBE screens
+           - skips user + machine OOBE
+           - auto-creates a local administrator account
+           - sets time zone, owner, organization
+         ========================================================== -->
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+
+      <!--
+        OOBE configuration:
+        These options together are responsible for hiding:
+          - EULA page
+          - MS account and online account screens
+          - wireless setup
+          - privacy / telemetry choices
+          - region / keyboard / "how will this device be used" prompts
+      -->
+      <OOBE>
+        <!-- Do not show the license agreement page -->
+        <HideEULAPage>true</HideEULAPage>
+
+        <!-- Hide OEM registration (not relevant in a VM lab) -->
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+
+        <!-- Do not offer Microsoft account / online account setup -->
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+
+        <!-- We do not need Wi-Fi setup in Proxmox VMs -->
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+
+        <!-- Treat this as a work (corporate) device, not a home PC -->
+        <NetworkLocation>Work</NetworkLocation>
+
+        <!-- "Protect your PC" default: 1 = recommended settings -->
+        <ProtectYourPC>1</ProtectYourPC>
+
+        <!--
+          The two keys below are the most important:
+          They instruct Windows to skip the entire OOBE flow
+          (including privacy / diagnostics / tracking pages).
+        -->
+        <SkipUserOOBE>true</SkipUserOOBE>
+        <SkipMachineOOBE>true</SkipMachineOOBE>
+      </OOBE>
+
+      <!--
+        LOCAL USER CREATION
+        ===================
+        We create one local Administrator account:
+          username:  localuser
+          password:  P@ssw0rd!
+        This prevents Windows from asking for:
+          - local account name
+          - password
+          - security questions
+        You can log on as "localuser" the first time if needed.
+        In production you may want to change this username/password.
+      -->
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                        wcm:action="add">
+            <!-- Local username that will be created during OOBE -->
+            <Name>localuser</Name>
+
+            <!-- Add the account to the local Administrators group -->
+            <Group>Administrators</Group>
+
+            <!-- Plain text password for the local account -->
+            <Password>
+              <Value>P@ssw0rd!</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <!-- Registration fields (optional, purely cosmetic) -->
+      <RegisteredOwner>Administrator</RegisteredOwner>
+      <RegisteredOrganization>Proxmox</RegisteredOrganization>
+
+      <!--
+        Time zone setting.
+        Hungarian locale uses Central Europe Standard Time,
+        English (US) uses UTC for broad compatibility.
+      -->
+      <TimeZone>$timeZone</TimeZone>
+
+      <!--
+        NOTE:
+        We intentionally do NOT set ComputerName here.
+        Proxmox + Cloudbase-Init + Cloud-Init will set the hostname
+        automatically based on the VM name and Cloud-Init metadata.
+      -->
+
+    </component>
+
+  </settings>
 
 </unattend>
 "@
 
-        try {
-            $sysprepDir = Split-Path $unattendPath -Parent
-            if (-not (Test-Path $sysprepDir)) {
-                New-Item -ItemType Directory -Path $sysprepDir -Force | Out-Null
-            }
+    try {
+        $sysprepDir = Split-Path $unattendPath -Parent
+        if (-not (Test-Path $sysprepDir)) {
+            New-Item -ItemType Directory -Path $sysprepDir -Force | Out-Null
+        }
 
-            $unattendContent | Set-Content -Path $unattendPath -Encoding UTF8 -Force
-            Write-Host "  Created unattend.xml at $unattendPath" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Failed to create unattend.xml: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host "Continuing without /unattend parameter." -ForegroundColor Yellow
-            $UnattendLanguage = $null
-        }
+        $unattendContent | Set-Content -Path $unattendPath -Encoding UTF8 -Force
+        Write-Host "`nSuccessfully created unattend.xml at:" -ForegroundColor Green
+        Write-Host "  $unattendPath" -ForegroundColor Cyan
+        Write-Host "`nYou can now:" -ForegroundColor Yellow
+        Write-Host "  1. Review/edit the generated XML file" -ForegroundColor White
+        Write-Host "  2. Run Sysprep manually with: " -ForegroundColor White
+        Write-Host "     C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:$unattendPath" -ForegroundColor Cyan
+        Write-Host "  3. Or re-run this script with -RunSysprep to execute Sysprep automatically" -ForegroundColor White
     }
+    catch {
+        Write-Host "`nFailed to create unattend.xml: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "You may need to run this script as Administrator." -ForegroundColor Yellow
+    }
+}
+#endregion
 
+#region Optionally run Sysprep
+if ($RunSysprep) {
+    $unattendPath = Join-Path $env:WINDIR 'System32\Sysprep\unattend.xml'
+    
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "RUNNING SYSPREP - FINAL STAGE" -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Cyan
@@ -660,12 +869,22 @@ if ($RunSysprep) {
         Write-Host "`nYou are now ready for the final Sysprep stage!" -ForegroundColor Green
         Write-Host "`nRecommended actions:" -ForegroundColor Cyan
         Write-Host "  1) OPTIONAL: Reboot the VM once to verify everything works" -ForegroundColor White
-        Write-Host "  2) Run the script again WITH -RunSysprep parameter:" -ForegroundColor White
-        Write-Host "       .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep" -ForegroundColor Yellow
-        Write-Host "     OR manually run Sysprep:" -ForegroundColor White
-        Write-Host "       $env:WINDIR\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown" -ForegroundColor Yellow
-        Write-Host "  3) When the VM shuts down, convert it to a Proxmox template" -ForegroundColor White
+        Write-Host "  2) Run the script again WITH -RunSysprep and -UnattendLanguage:" -ForegroundColor White
+        Write-Host "`n     RECOMMENDED (Hungarian with unattend.xml):" -ForegroundColor Yellow
+        Write-Host "       .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage hu-HU" -ForegroundColor Cyan
+        Write-Host "`n     RECOMMENDED (English with unattend.xml):" -ForegroundColor Yellow
+        Write-Host "       .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage en-US" -ForegroundColor Cyan
+        Write-Host "`n     OR run Sysprep manually after generating unattend.xml:" -ForegroundColor White
+        Write-Host "       First, generate unattend.xml by running this script with -UnattendLanguage (without -RunSysprep)" -ForegroundColor DarkGray
+        Write-Host "       Review/edit: C:\Windows\System32\Sysprep\unattend.xml" -ForegroundColor DarkGray
+        Write-Host "       Then run: C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml" -ForegroundColor Cyan
+        Write-Host "`n  3) When the VM shuts down, convert it to a Proxmox template" -ForegroundColor White
         Write-Host "  4) Deploy new VMs from the template using cloud-init" -ForegroundColor White
+        Write-Host "`n  Why use -UnattendLanguage?" -ForegroundColor Yellow
+        Write-Host "    - Skips ALL OOBE screens automatically (no manual input needed)" -ForegroundColor White
+        Write-Host "    - Creates local 'localuser' admin account for first login" -ForegroundColor White
+        Write-Host "    - Sets proper timezone and language/keyboard settings" -ForegroundColor White
+        Write-Host "    - You can review the generated XML before Sysprep runs" -ForegroundColor White
     } else {
         Write-Host "`nCloudbase-init services have been disabled." -ForegroundColor Green
         Write-Host "`nYou can now:" -ForegroundColor Cyan
