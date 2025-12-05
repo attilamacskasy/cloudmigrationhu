@@ -386,20 +386,20 @@ foreach ($pattern in $appPatterns) {
         Write-Host "    Removing AppxPackage: $($app.Name)" -ForegroundColor White
         try {
             Remove-AppxPackage -Package $app.PackageFullName -AllUsers -ErrorAction Stop
-            Write-Host "      ✓ Successfully removed" -ForegroundColor Green
+            Write-Host "      [OK] Successfully removed" -ForegroundColor Green
             $script:removedCount++
         } catch {
             $errorMsg = $_.Exception.Message
             
             # Check for specific error codes
             if ($errorMsg -match "0x80070032" -or $errorMsg -match "part of Windows and cannot be uninstalled") {
-                Write-Host "      ⊘ Skipped: Protected system app" -ForegroundColor DarkGray
+                Write-Host "      [SKIP] Protected system app" -ForegroundColor DarkGray
                 $script:skippedCount++
             } elseif ($errorMsg -match "not supported") {
-                Write-Host "      ⊘ Skipped: Operation not supported" -ForegroundColor DarkGray
+                Write-Host "      [SKIP] Operation not supported" -ForegroundColor DarkGray
                 $script:skippedCount++
             } else {
-                Write-Host "      ✗ Failed: $errorMsg" -ForegroundColor DarkRed
+                Write-Host "      [FAIL] $errorMsg" -ForegroundColor DarkRed
                 $script:failedCount++
             }
         }
@@ -412,16 +412,16 @@ foreach ($pattern in $appPatterns) {
         Write-Host "    Removing Provisioned package: $($prov.DisplayName)" -ForegroundColor White
         try {
             Remove-AppxProvisionedPackage -Online -PackageName $prov.PackageName -ErrorAction Stop | Out-Null
-            Write-Host "      ✓ Successfully removed" -ForegroundColor Green
+            Write-Host "      [OK] Successfully removed" -ForegroundColor Green
             $script:removedCount++
         } catch {
             $errorMsg = $_.Exception.Message
             
             if ($errorMsg -match "0x80070032" -or $errorMsg -match "part of Windows") {
-                Write-Host "      ⊘ Skipped: Protected system package" -ForegroundColor DarkGray
+                Write-Host "      [SKIP] Protected system package" -ForegroundColor DarkGray
                 $script:skippedCount++
             } else {
-                Write-Host "      ✗ Failed: $errorMsg" -ForegroundColor DarkRed
+                Write-Host "      [FAIL] $errorMsg" -ForegroundColor DarkRed
                 $script:failedCount++
             }
         }
@@ -446,10 +446,10 @@ if ($userOnlyPackages.Count -gt 0) {
             try {
                 if ($scope -eq 'AllUsers') {
                     Remove-AppxPackage -Package $pkg.PackageFullName -AllUsers -ErrorAction Stop
-                    Write-Host "    ✓ Successfully removed from all users" -ForegroundColor Green
+                    Write-Host "    [OK] Removed from all users" -ForegroundColor Green
                 } else {
                     Remove-AppxPackage -Package $pkg.PackageFullName -ErrorAction Stop
-                    Write-Host "    ✓ Successfully removed from current user" -ForegroundColor Green
+                    Write-Host "    [OK] Removed from current user" -ForegroundColor Green
                 }
 
                 $script:removedCount++
@@ -461,10 +461,10 @@ if ($userOnlyPackages.Count -gt 0) {
                 # Only log detailed error after attempting current user removal
                 if ($scope -eq 'CurrentUser') {
                     if ($lastError -match "0x80070032" -or $lastError -match "not supported") {
-                        Write-Host "    ⊘ Skipped: Protected system component" -ForegroundColor DarkGray
+                        Write-Host "    [SKIP] Protected system component" -ForegroundColor DarkGray
                         $script:skippedCount++
                     } else {
-                        Write-Host "    ✗ Failed: $lastError" -ForegroundColor DarkRed
+                        Write-Host "    [FAIL] $lastError" -ForegroundColor DarkRed
                         $script:failedCount++
                     }
                 }
@@ -474,7 +474,7 @@ if ($userOnlyPackages.Count -gt 0) {
         if (-not $removalSucceeded -and -not ($lastError -match "0x80070032" -or $lastError -match "not supported")) {
             # If we got here, both removal attempts failed with a non-system error already counted
             if (-not $lastError) {
-                Write-Host "    ✗ Failed: Unknown error removing $($pkg.Name)" -ForegroundColor DarkRed
+                Write-Host "    [FAIL] Unknown error removing $($pkg.Name)" -ForegroundColor DarkRed
                 $script:failedCount++
             }
         }
@@ -490,11 +490,11 @@ Write-Host "  Skipped:  $script:skippedCount packages (system protected)" -Foreg
 Write-Host "  Failed:   $script:failedCount packages" -ForegroundColor $(if ($script:failedCount -gt 0) { 'Red' } else { 'Green' })
 
 if ($script:failedCount -gt 0) {
-    Write-Host "`n⚠ WARNING: Some packages failed to remove. Review errors above." -ForegroundColor Yellow
+    Write-Host "`n[WARN] Some packages failed to remove. Review errors above." -ForegroundColor Yellow
     Write-Host "  This may cause Sysprep issues. Consider manual removal or troubleshooting." -ForegroundColor Yellow
     Write-Host "  Check C:\Windows\System32\Sysprep\Panther\setuperr.log for Sysprep errors." -ForegroundColor Yellow
 } else {
-    Write-Host "`n✓ All problematic packages removed successfully!" -ForegroundColor Green
+    Write-Host "`n[OK] All problematic packages removed successfully!" -ForegroundColor Green
 }
 
 # Final verification - check if any user-only packages remain
@@ -502,7 +502,7 @@ Write-Host "`n--- Final Verification ---" -ForegroundColor Cyan
 $remainingUserOnly = Find-UserOnlyAppxPackages
 
 if ($remainingUserOnly.Count -gt 0) {
-    Write-Host "`n⚠ WARNING: $($remainingUserOnly.Count) user-only packages still remain!" -ForegroundColor Red
+    Write-Host "`n[WARN] $($remainingUserOnly.Count) user-only packages still remain!" -ForegroundColor Red
     Write-Host "  These packages WILL cause Sysprep to fail:" -ForegroundColor Red
     foreach ($pkg in $remainingUserOnly) {
         Write-Host "    - $($pkg.Name)" -ForegroundColor Yellow
@@ -513,7 +513,7 @@ if ($remainingUserOnly.Count -gt 0) {
     Write-Host '       Get-AppxPackage -Name ''PackageName'' -AllUsers | Remove-AppxPackage -AllUsers' -ForegroundColor DarkGray
     Write-Host "    3. Check Windows Event Viewer for AppX deployment errors" -ForegroundColor White
 } else {
-    Write-Host "✓ No user-only packages detected. System is ready for Sysprep!" -ForegroundColor Green
+    Write-Host "[OK] No user-only packages detected. System is ready for Sysprep!" -ForegroundColor Green
 }
 
 Write-Host "`nAppX cleanup finished." -ForegroundColor Cyan
