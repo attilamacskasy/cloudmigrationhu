@@ -1,0 +1,86 @@
+PS C:\Users\admin\Desktop> .\Win11-SysprepCleanup.ps1
+=== Windows 11 Sysprep Compatibility Cleanup ===
+Cloudbase-Init Action: Disable
+
+--- Disabling Cloudbase-Init Services ---
+Processing service: cloudbase-init
+  Setting startup type to Disabled...
+  Success: Service stopped and disabled.
+
+Cloudbase-init services have been disabled.
+You can now safely install applications and configure the system.
+
+Checking BitLocker status on C: ...
+  BitLocker is already OFF on C:.
+
+Removing known Sysprep-blocking AppX packages...
+Note: Some system apps cannot be removed and will be skipped.
+
+  Processing packages matching: *handwriting*
+
+  Processing packages matching: Microsoft.Ink.Handwriting*
+
+  Processing packages matching: Microsoft.Xbox*
+    Skipping system app: Microsoft.XboxGameCallableUI
+      (This is a protected Windows component)
+
+  Processing packages matching: Microsoft.GamingApp*
+
+  Processing packages matching: Microsoft.OneConnect*
+
+  Processing packages matching: Microsoft.SkypeApp*
+
+  Processing packages matching: Microsoft.GetHelp*
+
+  Processing packages matching: Microsoft.Getstarted*
+
+  Processing packages matching: Microsoft.ZuneMusic*
+
+  Processing packages matching: Microsoft.ZuneVideo*
+
+  Processing packages matching: Microsoft.BingNews*
+
+  Processing packages matching: Microsoft.BingWeather*
+
+  Processing packages matching: Microsoft.Microsoft3DViewer*
+
+  Processing packages matching: Microsoft.MSPaint*
+
+  Processing packages matching: Microsoft.Print3D*
+
+  Processing packages matching: Microsoft.WindowsMaps*
+
+  Processing packages matching: Microsoft.MicrosoftOfficeHub*
+
+  Processing packages matching: Microsoft.People*
+
+  Processing packages matching: Microsoft.SolitaireCollection*
+
+  Processing packages matching: Microsoft.MixedReality.Portal*
+
+  Processing packages matching: Microsoft.YourPhone*
+
+--- AppX Package Removal Summary ---
+  Removed:  0 packages
+  Skipped:  1 packages (system protected)
+  Failed:   0 packages
+
+AppX cleanup finished. A quick reboot before Sysprep is recommended.
+
+========================================
+CLEANUP COMPLETE - NEXT STEPS
+========================================
+
+Cloudbase-init services have been disabled.
+
+You can now:
+  - Install your applications
+  - Apply Windows updates
+  - Configure system settings
+  - Install prerequisites
+
+When all installations are complete, run:
+  .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep
+
+=== Script finished ===
+PS C:\Users\admin\Desktop>
