@@ -1,71 +1,99 @@
-# Unattend.xml and Screenshot Mapping
+# Unattend.xml – Screenshot‑by‑Screenshot Mapping
 
-This document explains how the generated `unattend.xml` file relates to the `unattend.xml-*.jpg` screenshots in this folder. Use it as a visual guide to understand what each XML setting does and how it looks in the manual Windows setup / OOBE process.
+This document shows how the generated `unattend.xml` file relates to the `unattend.xml-01.jpg` … `unattend.xml-15.jpg` screenshots in this folder.
 
-The script `Win11-SysprepCleanup.ps1` creates `C:\Windows\System32\Sysprep\unattend.xml` when you run it with `-RunSysprep -UnattendLanguage <en-US|hu-HU>`. The structure of that file is based on the example `unattend.xml` in this folder.
+The script `Win11-SysprepCleanup.ps1` creates `C:\Windows\System32\Sysprep\unattend.xml` when you run it with:
 
-## 1. Language and Region Settings
+```powershell
+.\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage <en-US|hu-HU>
+```
 
-**Relevant XML component:** `Microsoft-Windows-International-Core` (pass=`oobeSystem`)
+and then calls:
+
+```text
+Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml
+```
+
+Below you see each OOBE screen in order (01–15), with the **screenshot**, then the **relevant XML component** that configures or skips that screen.
+
+---
+
+## Screenshot `unattend.xml-01.jpg` – Keyboard layout
+
+![unattend.xml-01](unattend.xml-01.jpg)
+
+Windows 11 OOBE asks: *“Is this the right keyboard layout or input method?”* (Hungarian UI). The first item is the **Hungarian** layout, with other layouts below.
+
+**Relevant XML – language & keyboard**  
+Component: `Microsoft-Windows-International-Core` (pass = `oobeSystem`)
 
 ```xml
 <settings pass="oobeSystem">
   <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-    <InputLocale>en-US</InputLocale>
-    <SystemLocale>en-US</SystemLocale>
-    <UILanguage>en-US</UILanguage>
-    <UILanguageFallback>en-US</UILanguageFallback>
-    <UserLocale>en-US</UserLocale>
+    <InputLocale>hu-HU</InputLocale>        <!-- or en-US -->
+    <SystemLocale>hu-HU</SystemLocale>
+    <UILanguage>hu-HU</UILanguage>
+    <UILanguageFallback>hu-HU</UILanguageFallback>
+    <UserLocale>hu-HU</UserLocale>
   </component>
 </settings>
 ```
 
-### Screenshot: `unattend.xml-01.jpg`
+- `InputLocale` selects this keyboard layout.  
+- `SystemLocale` / `UserLocale` control regional formats.  
+- `UILanguage` / `UILanguageFallback` control the UI text language.  
+- With `UnattendLanguage=hu-HU` or `en-US`, these values are pre‑set and this page is normally skipped.
 
-![unattend.xml-01](unattend.xml-01.jpg)
+---
 
-- **What you see on the image (English):**
-  - Windows 11 OOBE screen asking: "Is this the right keyboard layout or input method?" in Hungarian.
-  - The first keyboard layout in the list is **Hungarian** (magyar), with other layouts (US, Albanian, etc.) listed below and an **Yes** button to confirm.
-- **How XML controls this:**
-  - `InputLocale` maps to the primary keyboard layout shown on this page.
-  - `SystemLocale` and `UserLocale` control regional formats (date, time, numbers, etc.).
-  - `UILanguage` and `UILanguageFallback` control the language of all texts on this screen.
-  - When `UnattendLanguage` is `en-US` or `hu-HU`, all five elements are set to that value, so this screen is typically **skipped** and Windows silently uses the language/keyboard you selected in the script.
+## Screenshot `unattend.xml-02.jpg` – Add second keyboard layout
 
-## 2. OOBE Experience and Privacy / Online Account Screens
+![unattend.xml-02](unattend.xml-02.jpg)
 
-**Relevant XML component:** `Microsoft-Windows-Shell-Setup` → `<OOBE>` (pass=`oobeSystem`)
+OOBE asks: *“Do you want to add a second keyboard layout?”* with **Add layout** and **Skip** buttons.
+
+**Relevant XML** – still `Microsoft-Windows-International-Core`
+
+```xml
+<InputLocale>hu-HU</InputLocale>
+<UserLocale>hu-HU</UserLocale>
+```
+
+Because the primary layout is already defined, unattended setup keeps that choice and silently skips this follow‑up screen.
+
+---
+
+## Screenshot `unattend.xml-03.jpg` – License agreement (EULA)
+
+![unattend.xml-03](unattend.xml-03.jpg)
+
+Hungarian license agreement page asking you to review and accept the Microsoft Software License Terms.
+
+**Relevant XML – hide EULA page**  
+Component: `Microsoft-Windows-Shell-Setup` (pass = `oobeSystem`)
 
 ```xml
 <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
   <OOBE>
     <HideEULAPage>true</HideEULAPage>
-    <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-    <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-    <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
-    <NetworkLocation>Work</NetworkLocation>
-    <ProtectYourPC>1</ProtectYourPC>
-    <SkipUserOOBE>true</SkipUserOOBE>
-    <SkipMachineOOBE>true</SkipMachineOOBE>
+    ...
   </OOBE>
-  ...
 </component>
 ```
 
-### Screenshot: `unattend.xml-02.jpg`
+- `HideEULAPage=true` hides this EULA screen completely when using the unattended file.
 
-![unattend.xml-02](unattend.xml-02.jpg)
+---
 
-- **What you see on the image (English):**
-  - OOBE screen asking: "Do you want to add a second keyboard layout?" with two buttons: **Add layout** and **Skip**.
-- **How XML controls this:**
-  - Because the primary layout is already defined by `InputLocale`, Windows can safely skip this follow-up question.
-  - In unattended mode, this page is usually not shown; Windows just keeps the layout defined in `InputLocale` and does not prompt for a second one.
+## Screenshot `unattend.xml-04.jpg` – Device name
 
-## 3. Owner, Organization, and Time Zone
+![unattend.xml-04](unattend.xml-04.jpg)
 
-**Relevant XML (same Shell-Setup component):**
+Screen asking you to **name the device** (for example `tpl-win-11-v2`) with rules for the computer name.
+
+**Relevant XML** – none directly
+
+The current `unattend.xml` does **not** set the hostname. The closest related metadata is:
 
 ```xml
 <RegisteredOwner>Administrator</RegisteredOwner>
@@ -73,188 +101,199 @@ The script `Win11-SysprepCleanup.ps1` creates `C:\Windows\System32\Sysprep\unatt
 <TimeZone>UTC</TimeZone>
 ```
 
-### Screenshot: `unattend.xml-03.jpg`
+- These values affect System Properties and time zone, not the device name.  
+- Host name is still entered manually or via later automation.
 
-![unattend.xml-03](unattend.xml-03.jpg)
+---
 
-- **What you see on the image (English):**
-  - License agreement screen in Hungarian asking the user to review and accept the Microsoft Software License Terms.
-  - There is an **Accept** button at the bottom of the page.
-- **How XML controls this:**
-  - `HideEULAPage=true` tells Windows to suppress this entire EULA page during OOBE.
-  - With your unattended settings, the license is considered accepted automatically, so this confirmation screen is no longer shown when deploying from the template.
-
-## 4. Activation / Rearm Behavior
-
-**Relevant XML component:** `Microsoft-Windows-Security-SPP` (pass=`generalize`)
-
-```xml
-<settings pass="generalize">
-  <component name="Microsoft-Windows-Security-SPP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
-    <SkipRearm>1</SkipRearm>
-  </component>
-</settings>
-```
-
-### Screenshot: `unattend.xml-04.jpg`
-
-![unattend.xml-04](unattend.xml-04.jpg)
-
-- **What you see on the image (English):**
-  - OOBE page titled "Give your device a name" where the user types a computer name (for example `tpl-win-11-v2`).
-  - Text below the box explains the length and character rules for the device name.
-- **How XML controls this:**
-  - This particular screen is **not** directly set by your current `unattend.xml`; the computer name is still provided manually in this template workflow.
-  - The closest related XML values are `RegisteredOwner`, `RegisteredOrganization`, and `TimeZone`, which affect system metadata, not the hostname shown here.
-  - The screenshot is included to show that some settings (like host name) are still done manually; `unattend.xml` focuses on language, OOBE skipping, and privacy instead.
-
-### Screenshot: `unattend.xml-05.jpg`
+## Screenshot `unattend.xml-05.jpg` – Personal vs work/school
 
 ![unattend.xml-05](unattend.xml-05.jpg)
 
-- **What you see on the image (English):**
-  - OOBE screen asking "How would you like to set up this device?" with two options: **Set up for personal use** and **Set up for work or school**.
-- **How XML controls this:**
-  - `HideOnlineAccountScreens=true` prevents Windows from forcing you through Microsoft/organization account flows.
-  - `SkipUserOOBE=true` and `SkipMachineOOBE=true` tell Windows to skip the entire user and device setup wizard, including this page.
-  - `NetworkLocation>Work</NetworkLocation>` aligns the system with a work/enterprise environment, matching the Proxmox template use case.
+OOBE asks: *“How would you like to set up this device?”* with choices for **personal use** or **work / school**.
 
-### Screenshot: `unattend.xml-06.jpg`
+**Relevant XML – skip account/setup wizard**  
+Component: `Microsoft-Windows-Shell-Setup` → `<OOBE>`
+
+```xml
+<OOBE>
+  <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+  <NetworkLocation>Work</NetworkLocation>
+  <SkipUserOOBE>true</SkipUserOOBE>
+  <SkipMachineOOBE>true</SkipMachineOOBE>
+</OOBE>
+```
+
+- `HideOnlineAccountScreens` removes Microsoft‑account‑centric flows.  
+- `SkipUserOOBE` and `SkipMachineOOBE` skip this whole experience.  
+- `NetworkLocation=Work` matches the intended enterprise / Proxmox template scenario.
+
+---
+
+## Screenshot `unattend.xml-06.jpg` – Local account name
 
 ![unattend.xml-06](unattend.xml-06.jpg)
 
-- **What you see on the image (English):**
-  - OOBE screen titled "Who will use this device?" where the user enters a local account name (for example `localuser`).
-- **How XML controls this:**
-  - The unattended file does not define a fixed local username or password; instead it skips the whole account-creation flow:
+Screen titled *“Who will use this device?”* where you type a local username (for example `localuser`).
 
-    ```xml
-    <SkipUserOOBE>true</SkipUserOOBE>
-    ```
+**Relevant XML – skip user OOBE**
 
-  - With `SkipUserOOBE=true`, this page is not displayed during unattended deployments; accounts can be created later by automation (cloudbase-init / Proxmox cloud-init) or administrators.
+```xml
+<SkipUserOOBE>true</SkipUserOOBE>
+```
 
-### Screenshot: `unattend.xml-07.jpg`
+- The unattended file does not hard‑code a username or password.  
+- `SkipUserOOBE=true` prevents this page from being shown; you can create accounts later via automation or manual admin steps.
+
+---
+
+## Screenshot `unattend.xml-07.jpg` – Local account password
 
 ![unattend.xml-07](unattend.xml-07.jpg)
 
-- **What you see on the image (English):**
-  - OOBE screen prompting to create an "easy to remember" password for the local account, with a password being typed.
-- **How XML controls this:**
-  - Again controlled by `SkipUserOOBE=true`; the unattended setup skips password-creation screens and lets later automation handle credentials.
+OOBE asks you to create an "easy to remember" password for the local user.
 
-### Screenshot: `unattend.xml-08.jpg`
+**Relevant XML**
+
+```xml
+<SkipUserOOBE>true</SkipUserOOBE>
+```
+
+- The password wizard is part of user OOBE. Because `SkipUserOOBE=true`, password creation is left to later scripts or cloud-init rather than done here.
+
+---
+
+## Screenshot `unattend.xml-08.jpg` – Security questions
 
 ![unattend.xml-08](unattend.xml-08.jpg)
 
-- **What you see on the image (English):**
-  - OOBE page asking you to choose and answer security questions (for example "What was the name of your first pet?") for local account recovery.
-- **How XML controls this:**
-  - This step is also bypassed by `SkipUserOOBE=true`; security questions are never requested during unattended deployment.
+Screen asking you to choose and answer security questions (e.g. *“What was the name of your first pet?”*) for password recovery.
 
-### Screenshot: `unattend.xml-09.jpg`
+**Relevant XML**
+
+```xml
+<SkipUserOOBE>true</SkipUserOOBE>
+```
+
+- These questions are another part of user OOBE and are never asked when you skip it.
+
+---
+
+## Screenshot `unattend.xml-09.jpg` – Location services
 
 ![unattend.xml-09](unattend.xml-09.jpg)
 
-- **What you see on the image (English):**
-  - Privacy screen about allowing **location services** for Microsoft and apps. The selected option is **No**, disabling location-based services.
-- **How XML controls this:**
-  - These privacy choices are part of the broader OOBE privacy flow. In your XML, they are influenced by:
+Privacy screen about allowing **location services** for Microsoft and apps. The **No** option is selected.
 
-    ```xml
-    <ProtectYourPC>1</ProtectYourPC>
-    <SkipUserOOBE>true</SkipUserOOBE>
-    ```
+**Relevant XML – privacy baseline**
 
-  - `ProtectYourPC` sets the overall privacy/security baseline.
-  - With `SkipUserOOBE`, this page is normally skipped and the location preference is applied automatically instead of being clicked every time.
+```xml
+<OOBE>
+  <ProtectYourPC>1</ProtectYourPC>
+  <SkipUserOOBE>true</SkipUserOOBE>
+</OOBE>
+```
 
-### Screenshot: `unattend.xml-10.jpg`
+- `ProtectYourPC` sets the general privacy/security level.  
+- With `SkipUserOOBE`, this location screen is not shown; Windows applies the configured defaults.
+
+---
+
+## Screenshot `unattend.xml-10.jpg` – Find my device
 
 ![unattend.xml-10](unattend.xml-10.jpg)
 
-- **What you see on the image (English):**
-  - Privacy screen titled "Track my device" (Find my device) with **Yes** and **No** options; **No** is selected.
-- **How XML controls this:**
-  - There is no dedicated `<FindMyDevice>` element in your XML, but this feature depends on online/Microsoft account integration and privacy defaults:
+Screen titled *“Track my device”* (Find my device) with **Yes** / **No**; **No** is chosen.
 
-    ```xml
-    <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-    <SkipUserOOBE>true</SkipUserOOBE>
-    ```
+**Relevant XML – hide online account screens**
 
-  - Because online-account screens are hidden and user OOBE is skipped, this Find-my-device choice is not presented during unattended setup; the template uses the predefined privacy behavior.
+```xml
+<OOBE>
+  <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+  <SkipUserOOBE>true</SkipUserOOBE>
+</OOBE>
+```
 
-### Screenshot: `unattend.xml-11.jpg`
+- Find‑my‑device depends on signing in with a Microsoft account.  
+- Because online‑account screens are hidden and user OOBE is skipped, this page is not presented in unattended runs.
+
+---
+
+## Screenshot `unattend.xml-11.jpg` – Diagnostic data level
 
 ![unattend.xml-11](unattend.xml-11.jpg)
 
-- **What you see on the image (English):**
-  - Privacy screen titled "Send diagnostic data to Microsoft" with options to send only required diagnostics. The minimal/required level is selected.
-- **How XML controls this:**
-  - The diagnostic level is governed by the same OOBE privacy policy:
+Privacy screen titled *“Send diagnostic data to Microsoft”*; the minimal / required level is selected.
 
-    ```xml
-    <ProtectYourPC>1</ProtectYourPC>
-    ```
+**Relevant XML**
 
-  - Combined with `SkipUserOOBE`, this page is skipped and the chosen diagnostic level is applied automatically when deploying from the template.
+```xml
+<OOBE>
+  <ProtectYourPC>1</ProtectYourPC>
+</OOBE>
+```
 
-### Screenshot: `unattend.xml-12.jpg`
+- `ProtectYourPC` defines whether only required or more extensive diagnostics are sent.  
+- With unattended setup, this choice is applied automatically and the page is skipped.
+
+---
+
+## Screenshot `unattend.xml-12.jpg` – Improve inking & typing
 
 ![unattend.xml-12](unattend.xml-12.jpg)
 
-- **What you see on the image (English):**
-  - Privacy screen titled "Improve inking & typing" asking whether to send optional diagnostic data about handwriting and typing. The **No** option is selected.
-- **How XML controls this:**
-  - Controlled by the same privacy settings as diagnostics:
+Screen asking whether to send optional diagnostic data about handwriting and typing to "improve inking & typing"; **No** is selected.
 
-    ```xml
-    <ProtectYourPC>1</ProtectYourPC>
-    ```
+**Relevant XML**
 
-  - In unattended deployments, this screen is not shown; Windows uses the predefined privacy level instead.
+```xml
+<OOBE>
+  <ProtectYourPC>1</ProtectYourPC>
+</OOBE>
+```
 
-### Screenshot: `unattend.xml-13.jpg`
+- This is another optional diagnostics toggle controlled by the same privacy baseline.  
+- When using `unattend.xml`, the choice is enforced by XML and this page is not shown.
+
+---
+
+## Screenshot `unattend.xml-13.jpg` – Tailored experiences
 
 ![unattend.xml-13](unattend.xml-13.jpg)
 
-- **What you see on the image (English):**
-  - Privacy screen about using diagnostic data for **tailored experiences** (tips, ads, and recommendations). The **No** option is selected.
-- **How XML controls this:**
-  - Still part of the same OOBE privacy and diagnostics group:
+Screen about using diagnostic data for **tailored experiences** (tips, ads, recommendations); **No** is selected.
 
-    ```xml
-    <ProtectYourPC>1</ProtectYourPC>
-    ```
+**Relevant XML**
 
-  - With `ProtectYourPC` and `SkipUserOOBE`, this tailored-experiences page is skipped and the non-personalized option is applied automatically during unattended setup.
-
-## 5. How the Script Uses This Mapping
-
-When you run:
-
-```powershell
-# Hungarian unattended sysprep
-.\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage hu-HU
-
-# English (en-US) unattended sysprep
-.\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage en-US
+```xml
+<OOBE>
+  <ProtectYourPC>1</ProtectYourPC>
+</OOBE>
 ```
 
-The script:
+- Also governed by the same privacy level.  
+- The unattended template enforces the non‑personalized option without showing this screen.
 
-1. Builds an `unattend.xml` with all the sections shown above.
-2. Sets all locale-related values (`InputLocale`, `SystemLocale`, `UILanguage`, `UILanguageFallback`, `UserLocale`) to either `hu-HU` or `en-US`.
-3. Writes the file to `C:\Windows\System32\Sysprep\unattend.xml`.
-4. Calls:
-   - `Sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml`
+---
 
-This means the manual steps shown in the screenshots are replaced by:
+## Screenshot `unattend.xml-14.jpg` – (reserved)
 
-- Preselected language/region
-- Skipped OOBE / privacy / online-account pages
-- Predefined owner/organization/time zone
-- Controlled activation rearm behavior
+`unattend.xml-14.jpg` can be used for any additional OOBE or system screen you want to document. Map it to the appropriate XML section following the same pattern as above.
 
-Use this document together with the `unattend.xml-*.jpg` files to teach users how each piece of the XML corresponds to something they would otherwise click through manually during setup.
+---
+
+## Screenshot `unattend.xml-15.jpg` – (reserved)
+
+`unattend.xml-15.jpg` is reserved for future extension (for example, activation status after Sysprep or the first desktop after OOBE). Describe the screen and reference the relevant XML settings here if you decide to use it.
+
+---
+
+## How to read this mapping
+
+- **Screenshots 01–02** – language and keyboard (`International-Core`).
+- **Screenshot 03** – EULA, hidden via `HideEULAPage`.
+- **Screenshots 04–08** – device name and user creation; only some are automated, most are skipped by `SkipUserOOBE`.
+- **Screenshots 09–13** – privacy and diagnostics; governed mainly by `ProtectYourPC` and OOBE skip flags.
+- **14–15** – placeholders for any extra documentation you add later.
+
+Together with `Win11-SysprepCleanup.ps1`, this mapping shows exactly which manual OOBE steps are automated by `unattend.xml` and which ones remain manual or are handled by later cloud-init automation.
