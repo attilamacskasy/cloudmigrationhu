@@ -55,6 +55,14 @@
         
     -RunSysprep <Switch>
         Run Sysprep /generalize /oobe /shutdown after cleanup
+
+    -UnattendLanguage <String>
+        Optional. When specified together with -RunSysprep, generates
+        C:\Windows\System32\Sysprep\unattend.xml and runs Sysprep with
+        /unattend:C:\Windows\System32\Sysprep\unattend.xml.
+        Supported values:
+          - en-US  : English (United States)
+          - hu-HU  : Hungarian
     
     -ScanUserPackages <Switch>
         When supplied, detects and removes AppX packages installed for a single user only
@@ -76,6 +84,12 @@
 
     # Run the deep user-only AppX scan (optional)
     .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -ScanUserPackages
+
+    # Run Sysprep with generated unattend.xml in Hungarian
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage hu-HU
+
+    # Run Sysprep with generated unattend.xml in English (en-US)
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -RunSysprep -UnattendLanguage en-US
 #>
 
 param(
@@ -85,7 +99,10 @@ param(
     
     [switch]$RunSysprep,
 
-    [switch]$ScanUserPackages
+    [switch]$ScanUserPackages,
+
+    [ValidateSet('en-US', 'hu-HU')]
+    [string]$UnattendLanguage
 )
 
 #region Check for admin rights
@@ -542,10 +559,80 @@ Write-Host "IMPORTANT: Reboot before running Sysprep to ensure all changes take 
 
 #region Optionally run Sysprep
 if ($RunSysprep) {
+    $unattendPath = Join-Path $env:WINDIR 'System32\Sysprep\unattend.xml'
+
+        if ($UnattendLanguage) {
+                Write-Host "`nGenerating unattend.xml for language: $UnattendLanguage" -ForegroundColor Cyan
+
+                $inputLocale  = $UnattendLanguage
+                $systemLocale = $UnattendLanguage
+                $userLocale   = $UnattendLanguage
+                $uiLanguage   = $UnattendLanguage
+
+                $unattendContent = @"
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+            <InputLocale>$inputLocale</InputLocale>
+            <SystemLocale>$systemLocale</SystemLocale>
+            <UILanguage>$uiLanguage</UILanguage>
+            <UILanguageFallback>$uiLanguage</UILanguageFallback>
+            <UserLocale>$userLocale</UserLocale>
+        </component>
+
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+            <OOBE>
+                <HideEULAPage>true</HideEULAPage>
+                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+                <NetworkLocation>Work</NetworkLocation>
+                <ProtectYourPC>1</ProtectYourPC>
+                <SkipUserOOBE>true</SkipUserOOBE>
+                <SkipMachineOOBE>true</SkipMachineOOBE>
+            </OOBE>
+            <RegisteredOwner>Administrator</RegisteredOwner>
+            <RegisteredOrganization>Proxmox</RegisteredOrganization>
+            <TimeZone>UTC</TimeZone>
+        </component>
+
+    </settings>
+
+    <settings pass="generalize">
+        <component name="Microsoft-Windows-Security-SPP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+            <SkipRearm>1</SkipRearm>
+        </component>
+    </settings>
+
+</unattend>
+"@
+
+        try {
+            $sysprepDir = Split-Path $unattendPath -Parent
+            if (-not (Test-Path $sysprepDir)) {
+                New-Item -ItemType Directory -Path $sysprepDir -Force | Out-Null
+            }
+
+            $unattendContent | Set-Content -Path $unattendPath -Encoding UTF8 -Force
+            Write-Host "  Created unattend.xml at $unattendPath" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Failed to create unattend.xml: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Continuing without /unattend parameter." -ForegroundColor Yellow
+            $UnattendLanguage = $null
+        }
+    }
+
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "RUNNING SYSPREP - FINAL STAGE" -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "`nExecuting: Sysprep.exe /generalize /oobe /shutdown" -ForegroundColor White
+    if ($UnattendLanguage) {
+        Write-Host "`nExecuting: Sysprep.exe /generalize /oobe /shutdown /unattend:$unattendPath" -ForegroundColor White
+    } else {
+        Write-Host "`nExecuting: Sysprep.exe /generalize /oobe /shutdown" -ForegroundColor White
+    }
     Write-Host "`nIMPORTANT NOTES:" -ForegroundColor Yellow
     Write-Host "  - The VM will shutdown after Sysprep completes" -ForegroundColor White
     Write-Host "  - DO NOT boot this VM again!" -ForegroundColor Red
@@ -555,7 +642,11 @@ if ($RunSysprep) {
     Write-Host ""
 
     try {
-        & "$env:WINDIR\System32\Sysprep\Sysprep.exe" /generalize /oobe /shutdown
+        if ($UnattendLanguage -and (Test-Path $unattendPath)) {
+            & "$env:WINDIR\System32\Sysprep\Sysprep.exe" /generalize /oobe /shutdown /unattend:$unattendPath
+        } else {
+            & "$env:WINDIR\System32\Sysprep\Sysprep.exe" /generalize /oobe /shutdown
+        }
     } catch {
         Write-Host "Sysprep failed to launch: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
