@@ -35,6 +35,7 @@
     - Re-enable cloudbase-init services (required for Proxmox cloud-init)
     - Turn off BitLocker on C: drive
     - Remove Sysprep-blocking AppX packages
+    - Run optional user-only AppX scan when requested
     - Run Sysprep to generalize the image
     - Shutdown the VM
     
@@ -54,6 +55,10 @@
         
     -RunSysprep <Switch>
         Run Sysprep /generalize /oobe /shutdown after cleanup
+    
+    -ScanUserPackages <Switch>
+        When supplied, detects and removes AppX packages installed for a single user only
+        (These scans can take several minutes; disabled by default.)
         
     USAGE EXAMPLES:
     ---------------
@@ -68,6 +73,9 @@
     
     # Just cleanup without sysprep (manual sysprep later)
     .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable
+
+    # Run the deep user-only AppX scan (optional)
+    .\Win11-SysprepCleanup.ps1 -CloudbaseAction Enable -ScanUserPackages
 #>
 
 param(
@@ -75,7 +83,9 @@ param(
     [ValidateSet('Check', 'Disable', 'Enable')]
     [string]$CloudbaseAction = 'Disable',
     
-    [switch]$RunSysprep
+    [switch]$RunSysprep,
+
+    [switch]$ScanUserPackages
 )
 
 #region Check for admin rights
@@ -429,56 +439,62 @@ foreach ($pattern in $appPatterns) {
 }
 # End of foreach ($pattern in $appPatterns)
 
-# Scan and remove user-only packages (the main Sysprep issue!)
-Write-Host "`n========================================" -ForegroundColor Cyan
-$userOnlyPackages = Find-UserOnlyAppxPackages
+# Scan and remove user-only packages (optional deep clean)
+if ($ScanUserPackages) {
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    $userOnlyPackages = Find-UserOnlyAppxPackages
 
-if ($userOnlyPackages.Count -gt 0) {
-    Write-Host "`nRemoving user-only packages (CRITICAL for Sysprep)..." -ForegroundColor Yellow
+    if ($userOnlyPackages.Count -gt 0) {
+        Write-Host "`nRemoving user-only packages (CRITICAL for Sysprep)..." -ForegroundColor Yellow
+        
+        foreach ($pkg in $userOnlyPackages) {
+            Write-Host "`n  Removing user-only package: $($pkg.Name)" -ForegroundColor White
 
-    foreach ($pkg in $userOnlyPackages) {
-        Write-Host "`n  Removing user-only package: $($pkg.Name)" -ForegroundColor White
+            $removalSucceeded = $false
+            $lastError = $null
 
-        $removalSucceeded = $false
-        $lastError = $null
-
-        foreach ($scope in @('AllUsers', 'CurrentUser')) {
-            try {
-                if ($scope -eq 'AllUsers') {
-                    Remove-AppxPackage -Package $pkg.PackageFullName -AllUsers -ErrorAction Stop
-                    Write-Host "    [OK] Removed from all users" -ForegroundColor Green
-                } else {
-                    Remove-AppxPackage -Package $pkg.PackageFullName -ErrorAction Stop
-                    Write-Host "    [OK] Removed from current user" -ForegroundColor Green
-                }
-
-                $script:removedCount++
-                $removalSucceeded = $true
-                break
-            } catch {
-                $lastError = $_.Exception.Message
-
-                # Only log detailed error after attempting current user removal
-                if ($scope -eq 'CurrentUser') {
-                    if ($lastError -match "0x80070032" -or $lastError -match "not supported") {
-                        Write-Host "    [SKIP] Protected system component" -ForegroundColor DarkGray
-                        $script:skippedCount++
+            foreach ($scope in @('AllUsers', 'CurrentUser')) {
+                try {
+                    if ($scope -eq 'AllUsers') {
+                        Remove-AppxPackage -Package $pkg.PackageFullName -AllUsers -ErrorAction Stop
+                        Write-Host "    [OK] Removed from all users" -ForegroundColor Green
                     } else {
-                        Write-Host "    [FAIL] $lastError" -ForegroundColor DarkRed
-                        $script:failedCount++
+                        Remove-AppxPackage -Package $pkg.PackageFullName -ErrorAction Stop
+                        Write-Host "    [OK] Removed from current user" -ForegroundColor Green
+                    }
+
+                    $script:removedCount++
+                    $removalSucceeded = $true
+                    break
+                } catch {
+                    $lastError = $_.Exception.Message
+
+                    # Only log detailed error after attempting current user removal
+                    if ($scope -eq 'CurrentUser') {
+                        if ($lastError -match "0x80070032" -or $lastError -match "not supported") {
+                            Write-Host "    [SKIP] Protected system component" -ForegroundColor DarkGray
+                            $script:skippedCount++
+                        } else {
+                            Write-Host "    [FAIL] $lastError" -ForegroundColor DarkRed
+                            $script:failedCount++
+                        }
                     }
                 }
             }
-        }
 
-        if (-not $removalSucceeded -and -not ($lastError -match "0x80070032" -or $lastError -match "not supported")) {
-            # If we got here, both removal attempts failed with a non-system error already counted
-            if (-not $lastError) {
-                Write-Host "    [FAIL] Unknown error removing $($pkg.Name)" -ForegroundColor DarkRed
-                $script:failedCount++
+            if (-not $removalSucceeded -and -not ($lastError -match "0x80070032" -or $lastError -match "not supported")) {
+                # If we got here, both removal attempts failed with a non-system error already counted
+                if (-not $lastError) {
+                    Write-Host "    [FAIL] Unknown error removing $($pkg.Name)" -ForegroundColor DarkRed
+                    $script:failedCount++
+                }
             }
         }
+    } else {
+        Write-Host "No user-only packages detected during deep scan." -ForegroundColor Green
     }
+} else {
+    Write-Host "`n(User-only package scan skipped. Re-run with -ScanUserPackages for a deep cleanup.)" -ForegroundColor DarkGray
 }
 
 # Summary
@@ -499,21 +515,25 @@ if ($script:failedCount -gt 0) {
 
 # Final verification - check if any user-only packages remain
 Write-Host "`n--- Final Verification ---" -ForegroundColor Cyan
-$remainingUserOnly = Find-UserOnlyAppxPackages
+if ($ScanUserPackages) {
+    $remainingUserOnly = Find-UserOnlyAppxPackages
 
-if ($remainingUserOnly.Count -gt 0) {
-    Write-Host "`n[WARN] $($remainingUserOnly.Count) user-only packages still remain!" -ForegroundColor Red
-    Write-Host "  These packages WILL cause Sysprep to fail:" -ForegroundColor Red
-    foreach ($pkg in $remainingUserOnly) {
-        Write-Host "    - $($pkg.Name)" -ForegroundColor Yellow
+    if ($remainingUserOnly.Count -gt 0) {
+        Write-Host "`n[WARN] $($remainingUserOnly.Count) user-only packages still remain!" -ForegroundColor Red
+        Write-Host "  These packages WILL cause Sysprep to fail:" -ForegroundColor Red
+        foreach ($pkg in $remainingUserOnly) {
+            Write-Host "    - $($pkg.Name)" -ForegroundColor Yellow
+        }
+        Write-Host "`n  Recommended actions:" -ForegroundColor Cyan
+        Write-Host "    1. Try running this script again" -ForegroundColor White
+        Write-Host "    2. Manually remove packages using:" -ForegroundColor White
+        Write-Host '       Get-AppxPackage -Name ''PackageName'' -AllUsers | Remove-AppxPackage -AllUsers' -ForegroundColor DarkGray
+        Write-Host "    3. Check Windows Event Viewer for AppX deployment errors" -ForegroundColor White
+    } else {
+        Write-Host "[OK] No user-only packages detected. System is ready for Sysprep!" -ForegroundColor Green
     }
-    Write-Host "`n  Recommended actions:" -ForegroundColor Cyan
-    Write-Host "    1. Try running this script again" -ForegroundColor White
-    Write-Host "    2. Manually remove packages using:" -ForegroundColor White
-    Write-Host '       Get-AppxPackage -Name ''PackageName'' -AllUsers | Remove-AppxPackage -AllUsers' -ForegroundColor DarkGray
-    Write-Host "    3. Check Windows Event Viewer for AppX deployment errors" -ForegroundColor White
 } else {
-    Write-Host "[OK] No user-only packages detected. System is ready for Sysprep!" -ForegroundColor Green
+    Write-Host "  Skipped (enable -ScanUserPackages to perform this check)." -ForegroundColor DarkGray
 }
 
 Write-Host "`nAppX cleanup finished." -ForegroundColor Cyan
