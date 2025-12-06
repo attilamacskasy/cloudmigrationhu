@@ -19,7 +19,8 @@ function Invoke-InteractiveStep {
         [string]$Name,
         [string]$Why,
         [string]$CommandText,
-        [string]$VerifyText = ""
+        [string]$VerifyText = "",
+        [ref]$RunAll = $(New-Object bool)
     )
 
     Write-Host ""
@@ -31,7 +32,15 @@ function Invoke-InteractiveStep {
     Write-Host $CommandText -ForegroundColor Gray
     Write-Host "==================================================================" -ForegroundColor DarkCyan
 
-    $answer = Read-Host "Run this step? (Y/N)"
+    $answer = 'Y'
+    if (-not $RunAll.Value) {
+        $answer = Read-Host "Run this step? (Y/N/A for all)"
+        if ($answer -match '^[Aa]') {
+            $RunAll.Value = $true
+            $answer = 'Y'
+        }
+    }
+
     if ($answer -match '^[Yy]') {
         try {
             Invoke-Expression $CommandText
@@ -41,7 +50,10 @@ function Invoke-InteractiveStep {
                 Write-Host ""
                 Write-Host "Verification commands for '$Name':" -ForegroundColor Yellow
                 Write-Host $VerifyText -ForegroundColor Gray
-                $vAnswer = Read-Host "Run verification now? (Y/N)"
+                $vAnswer = 'N'
+                if (-not $RunAll.Value) {
+                    $vAnswer = Read-Host "Run verification now? (Y/N)"
+                }
                 if ($vAnswer -match '^[Yy]') {
                     Invoke-Expression $VerifyText
                 }
@@ -92,18 +104,18 @@ Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\P
 $steps += [PSCustomObject]@{
     Name  = "Set power plan (High performance, no sleep)"
     Why   = "For VMs and VDI we usually want no sleep/hibernate and a consistent performance-oriented power profile."
-    Cmd   = @"
+    Cmd   = @'
 # Try to set High performance as active power scheme (if exists)
-$highPerf = powercfg -l | Select-String -Pattern 'High performance'
+$highPerf = powercfg -l | Select-String -Pattern "High performance"
 if ($highPerf) {
-    \$guid = (\$highPerf.ToString().Split()[3]).Trim()
-    powercfg -setactive \$guid
+    $guid = ($highPerf.ToString().Split()[3]).Trim()
+    powercfg -setactive $guid
 }
 # Disable display and system sleep on AC power
 powercfg -change -monitor-timeout-ac 0
 powercfg -change -standby-timeout-ac 0
 powercfg -change -hibernate-timeout-ac 0
-"@
+'@
     Verify = @"
 powercfg /l
 powercfg /q
@@ -132,38 +144,43 @@ Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameBar'
 $steps += [PSCustomObject]@{
     Name  = "Remove common consumer AppX bloat (optional)"
     Why   = "Removes some non-essential Windows Store apps (Xbox, 3D, mixed reality, etc.). Core apps like Store, Photos, Calculator are kept."
-    Cmd   = @"
+    Cmd   = @'
 # Patterns of non-essential apps, adjust if needed
-\$patterns = @(
-    'Microsoft.Xbox*',
-    'Microsoft.GamingApp*',
-    'Microsoft.ZuneMusic*',
-    'Microsoft.ZuneVideo*',
-    'Microsoft.Microsoft3DViewer*',
-    'Microsoft.MSPaint*',
-    'Microsoft.Print3D*',
-    'Microsoft.MixedReality.Portal*',
-    'Microsoft.SkypeApp*',
-    'Microsoft.GetHelp*',
-    'Microsoft.Getstarted*',
-    'Microsoft.SolitaireCollection*',
-    'Microsoft.People*',
-    'Microsoft.BingWeather*',
-    'Microsoft.BingNews*'
+$patterns = @(
+    "Microsoft.Xbox*",
+    "Microsoft.GamingApp*",
+    "Microsoft.ZuneMusic*",
+    "Microsoft.ZuneVideo*",
+    "Microsoft.Microsoft3DViewer*",
+    "Microsoft.MSPaint*",
+    "Microsoft.Print3D*",
+    "Microsoft.MixedReality.Portal*",
+    "Microsoft.SkypeApp*",
+    "Microsoft.GetHelp*",
+    "Microsoft.Getstarted*",
+    "Microsoft.SolitaireCollection*",
+    "Microsoft.People*",
+    "Microsoft.BingWeather*",
+    "Microsoft.BingNews*"
 )
 
-foreach (\$p in \$patterns) {
-    Write-Host "Trying to remove AppX packages matching: \$p" -ForegroundColor Yellow
-    Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | Where-Object { \$_.Name -like \$p } | ForEach-Object {
-        Write-Host "  Removing package: \$($_.Name)" -ForegroundColor DarkYellow
+foreach ($p in $patterns) {
+    Write-Host "Trying to remove AppX packages matching: $p" -ForegroundColor Yellow
+    Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | Where-Object { $_.Name -like $p } | ForEach-Object {
+        Write-Host "  Removing package: $($_.Name)" -ForegroundColor DarkYellow
         try {
-            Remove-AppxPackage -Package \$_.PackageFullName -AllUsers -ErrorAction SilentlyContinue
+            Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction Stop
         } catch {
-            Write-Host "    Failed to remove: \$($_.Exception.Message)" -ForegroundColor Red
+            $msg = $_.Exception.Message
+            if ($msg -match '0x80070032' -or $msg -match 'part of Windows and cannot be uninstalled') {
+                Write-Host "    Skipping protected system app: $($_.Name)" -ForegroundColor DarkGray
+            } else {
+                Write-Host "    Failed to remove: $msg" -ForegroundColor Red
+            }
         }
     }
 }
-"@
+'@
     Verify = @"
 Get-AppxPackage -AllUsers | Select-Object Name | Sort-Object Name
 "@
@@ -236,8 +253,9 @@ Write-Host ""
 Read-Host "Press ENTER to start interactive execution..."
 
 # ---------- Execute steps interactively ----------
+$runAll = $false
 foreach ($step in $steps) {
-    Invoke-InteractiveStep -Name $step.Name -Why $step.Why -CommandText $step.Cmd -VerifyText $step.Verify
+    Invoke-InteractiveStep -Name $step.Name -Why $step.Why -CommandText $step.Cmd -VerifyText $step.Verify -RunAll ([ref]$runAll)
 }
 
 Write-Host ""
