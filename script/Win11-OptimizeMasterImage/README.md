@@ -6,9 +6,9 @@ The script walks through a **series of safe OS-level optimizations**, shows you 
 
 The screenshots below show the interactive flow as it runs step-by-step in an elevated PowerShell window.
 
-![Interactive optimization steps](./Win11-OptimizeVDIMasterImage.ps1-01.jpg)
+![Interactive optimization steps](./Win11-OptimizeMasterImage.ps1-01.jpg)
 
-![Later optimization steps](./Win11-OptimizeVDIMasterImage.ps1-02.jpg)
+![Later optimization steps](./Win11-OptimizeMasterImage.ps1-02.jpg)
 
 ---
 
