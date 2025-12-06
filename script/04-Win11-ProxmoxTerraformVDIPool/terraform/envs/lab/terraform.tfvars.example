@@ -1,0 +1,18 @@
+pm_api_url          = "https://pve-01:8006/api2/json"
+pm_api_token_id     = "terraform@pve!tf-token"
+pm_api_token_secret = "CHANGE_ME"
+
+pm_node       = "pve-01"
+template_name = "tpl-win-11-v2"
+pool          = "win11-pool"
+
+vm_count       = 3
+vm_name_prefix = "GP-P-BID-W11-"
+vm_id_start    = 300
+
+ci_user       = "Administrator"
+ci_password   = "CHANGE_ME_STRONG_PASSWORD"
+ci_dns_server = "172.22.25.10"
+ci_ipv4_cidr  = "172.22.25.0/24"
+ci_gateway    = "172.22.25.1"
+ci_ip_host_offset = 20
