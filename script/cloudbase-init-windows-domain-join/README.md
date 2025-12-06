@@ -1,67 +1,97 @@
+# Cloudbase-Init Windows Domain Join – Full Architecture
 
-## Cloudbase-Init Windows Domain Join – Project Overview
+> **Goal**: Build a *repeatable*, “cloud-style” way to deploy Windows 11 VMs on Proxmox that:
+>
+> - boot from a **sysprepped golden image**
+> - receive hostname, IP and credentials via **Proxmox cloud-init**
+> - **join an Active Directory domain automatically** on first boot
+> - can be mass-provisioned using **Terraform**
 
-### The problem
+This folder contains the concept, reference configs and example scripts that tie all of this together.
 
-On Proxmox (and most other KVM platforms) there are **no free, official Windows cloud images**:
+---
 
-- You cannot just download a “Windows image” the way you would with Ubuntu or CentOS.
-- To use **cloud-init** features on Windows, you need **Cloudbase-Init**, which expects a specially prepared guest.
-- Building that image by hand (install, configure, domain join logic, sysprep, capture) is **tedious and easy to get wrong**.
+## 1. High-Level Architecture
 
-As a result, many people either skip automation for Windows entirely or fall back to fragile one-off scripts on each VM.
+We use three main building blocks:
 
-### The purpose of this project
+1. **Proxmox + Cloud-Init**
+   - Proxmox provides a cloud-init disk (ConfigDrive v2).
+   - It holds metadata such as hostname, IP config, initial username/password and optional custom data.
 
-This project explores how to **automate Windows image preparation and domain join in a Proxmox + Cloudbase-Init world**, using AI-assisted PowerShell and open documentation.
+2. **Windows 11 Golden Image with Cloudbase-Init**
+   - A manually prepared Windows 11 VM:
+     - Optimized and cleaned up.
+     - Sysprepped with an `unattend.xml` that skips most OOBE questions.
+     - Has **Cloudbase-Init** installed and configured.
+   - Cloudbase-Init reads Proxmox’s metadata and:
+     - sets hostname
+     - configures networking
+     - runs **local PowerShell scripts** on first boot
 
-Goals:
+3. **Terraform (Proxmox Provider)**
+   - Terraform clones the golden template into many VMs.
+   - For each VM it sets:
+     - VM name / resources
+     - Cloud-init network data (static or DHCP)
+     - Cloud-init username/password (used for initial local or domain join account)
+     - Optional extra metadata (for domain join OU, etc., if desired later)
 
-- Create a **repeatable recipe** for a Windows VM that works well with **Cloudbase-Init** and Proxmox cloud-init.
-- Make it easy to **auto-join Windows VMs to a domain** during first boot, using cloud-init style metadata instead of manual clicks.
-- Show how on-premises Proxmox can get **“cloud-like” Windows automation**, similar to what VMware Horizon or Citrix environments have, but with **free and open components**.
+### Life-of-a-VM
 
-This is not just a one-off script – it’s a **building block** toward a full, self-service VDI / lab environment on Proxmox.
+1. `terraform apply`
+   - Proxmox clones the Windows 11 template into a new VM.
+   - Proxmox generates a cloud-init disk for that VM with the given hostname/IP/creds.
 
-### Why this is cool and important
+2. First boot
+   - Cloudbase-Init reads metadata from the cloud-init disk.
+   - It sets hostname, IP and the Administrator (or template user) password.
+   - It executes local scripts under `C:\Program Files\Cloudbase Solutions\Cloudbase-Init\LocalScripts\`.
 
-- **Cloud-style automation for Windows**: Bring the same “cloud-init” experience you know from Linux to Windows VMs on Proxmox.
-- **Bridges a real gap**: The lack of official Windows cloud images means everyone has to reinvent this; this project documents the path.
-- **On-prem, open, and affordable**: Combine Proxmox + Cloudbase-Init + PowerShell to get capabilities similar to big commercial stacks, without the licensing overhead.
-- **AI-assisted infrastructure**: The scripts and docs are intentionally written in a clear, explain-what-we-do style so they are easy to extend, regenerate, or refactor with tools like GitHub Copilot / AI assistants.
+3. Domain join script
+   - A PowerShell script (`01-domain-join.ps1`) runs once.
+   - Uses domain join credentials (passed via cloud-init or baked in for lab use).
+   - Calls `Add-Computer` to join the AD domain and optionally move the computer into a specific OU.
+   - Reboots if needed.
 
-If you care about **repeatable Windows deployments**, lab automation, VDI, or “infrastructure as code” for on-prem environments, this project is meant to be useful out-of-the-box and also a good template to learn from.
+Result: a **domain-joined, fully configured** Windows 11 VM with no manual clicks.
 
-### What to expect from this folder
+---
 
-In this `cloudbase-init-windows-domain-join` folder you’ll typically find:
+## 2. Windows 11 Golden Image
 
-- PowerShell scripts and example configs that:
-	- Assume **Cloudbase-Init** is installed on the Windows template.
-	- Show how to wire **cloud-init / metadata** (from Proxmox) into **Windows domain join** parameters.
-	- Are designed to work cleanly with **Sysprep** and template cloning.
-- A focus on **readability and explanation** over clever one-liners – the goal is that you can adapt this to your own AD, OU structure, and security rules.
+This image is prepared once and then reused for all clones.
 
-The bigger picture across the repo is a step-by-step journey: from raw Windows install ➜ optimized master image ➜ sysprep-ready Proxmox template ➜ automatically configured, domain-joined Windows VMs.
+### 2.1. Base OS & Apps
 
-### Background / references
+On a clean VM (no template yet):
 
-For context on how Proxmox and Cloudbase-Init fit together, see the official Proxmox docs:
+1. Install Windows 11 (Pro, Enterprise or Education) on Proxmox.
+2. Install drivers / guest tools:
+   - VirtIO drivers if needed.
+   - Optional: guest tools for clipboard, etc.
+3. Install common apps *before* Sysprep:
+   - Microsoft 365 Apps (Office) with your preferred channel / licensing.
+   - PDF reader (e.g., Acrobat Reader or other).
+   - Browser(s).
+   - VC++ Redistributables, .NET runtimes, OneDrive, Teams machine-wide, etc.
+4. Configure Windows update, time, language and region as you prefer for the lab.
 
-- Cloud-Init on Windows (Proxmox wiki):  
-	https://pve.proxmox.com/wiki/Cloud-Init_Support#_cloud_init_on_windows
+The idea is: **everything that should be on every VM goes into the golden image**.
 
-Key points from that page:
+### 2.2. Cloudbase-Init Installation
 
-- **Cloudbase-Init** is the Windows implementation of cloud-init.
-- Not every Linux cloud-init feature is available; some behaviors differ.
-- For Windows guests using Cloudbase-Init on Proxmox you typically need:
-	- `ostype` set to a Windows type.
-	- `citype` set to `configdrive2` (default for Windows ostype in Proxmox).
-- There are **no free official Windows cloud images**, so you must build your own base image – which is exactly the gap this project helps to close.
+Install Cloudbase-Init using the official MSI inside the VM.
 
-Use this directory as a reference and a starting point for your own **cloudbase-init aware, domain-join ready** Windows templates.
+Typical installer choices:
 
+- Username: `Administrator` (we will *not* use this to create a new user; we will override behavior in config).
+- Local groups: `Administrators`
+- Run service as: **LocalSystem**
+- Do **not** let the installer run Sysprep for you.
 
+After install, check `C:\Program Files\Cloudbase Solutions\Cloudbase-Init\conf\` for:
 
-
+- `cloudbase-init.conf`
+- `cloudbase-init-unattend.conf`
+- `Unattend.xml` (the OEM unattend file used when Cloudbase-Init runs sysprep; we keep our own Sysprep flow, but it’s good reference)
